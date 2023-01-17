@@ -1,0 +1,263 @@
+/*******************************************************************************
+* Component: (VENBLA)
+*
+* %I
+* Written by: James Rogers (jroger87@vols.utk.edu)
+* Date: Jan 5, 2023
+* Origin: University of Tennessee, Knoxville
+* Version: 1.0
+*
+* %D
+* Models a differential neutron focusing device using
+* a series of mirrors to reflect neutrons to target
+*
+* Neutron-reflective horizontal blades of equal angle spacing from source,
+* with a gap in the middle to allow passage of on-course neutrons
+* Blades are angled such that ray from source to center of blade will be
+* deflected towards center of target
+*
+* Similar concept to 'nested reflector' used in X-Ray astonomy, but instead
+* using flat surfaces to account for vx, vy deviation independently
+*
+* %P
+* INPUT PARAMETERS:
+*
+* N: [1]	(1/2) number of blades
+* zvb: [m]	z position of vb
+* zdet: [m]	z position of detector
+* len: [m]	blade length (z)
+* thickness: [m]	thickness of 'dead zone' substrate (y)
+* hvb: [m]	(1/2) height of vb array (y)
+* wvb: [m]	(1/2) width of vb array (x)
+* hdet: [m]	(1/2) height of detector (y)
+* mi: [1]	m value of material
+* reflect: [str]	Name of reflectivity file. Format q(nm-1) R(0-1). Leave "0" for 100% reflectivity
+*
+* %L
+* See also <A HREF="https://www.desmos.com/calculator/hln2tu6ozw">Desmos interactive model
+*
+*
+* %End
+*
+*******************************************************************************/
+
+DEFINE COMPONENT Venbla
+DEFINITION PARAMETERS ()
+SETTING PARAMETERS (string reflect=0, N, zvb, zdet, len=0.30, thickness = 0.002,
+	hvb, wvb, hdet, mi=6)
+/* Neutron parameters: (x,y,z,vx,vy,vz,t,sx,sy,sz,p) */
+SHARE
+%{
+	%include "read_table-lib"
+	%include "ref-lib"
+%}
+
+DECLARE
+%{
+	t_Table pTable;
+
+	/* total number of blades in vb array */
+	int numBlades;
+
+	/* vb generated for angles between these two ranges on either side */
+	double outer_angle;
+	double inner_angle;
+
+	/* y position and angular rotation of blades */
+	DArray1d y_vals;
+	DArray1d angles;
+
+	/* normal vectors to blade surface */
+	DArray1d norm_y;
+	DArray1d norm_z;
+%}
+
+INITIALIZE
+%{
+	/* checking for errors */
+	if (zdet < 2.*zvb)
+		{ fprintf(stderr,"vb: %s: Error: invalid focus distance\n", NAME_CURRENT_COMP); exit(-1); }
+	if (N*zvb*zdet*len*thickness*hdet*hvb*wvb == 0)
+		{ fprintf(stderr,"vb: error: %s has one of N,zvb,zdet,len,thickness,hdet,hvb null.\n", NAME_CURRENT_COMP); exit(-1); }
+
+	if (reflect && strlen(reflect) && strcmp(reflect,"NULL") && strcmp(reflect,"0")) {
+		if (Table_Read(&pTable, reflect, 1) <= 0) /* read 1st block data from file into pTable */
+			exit(fprintf(stderr,"Mirror: %s: can not read file %s\n", NAME_CURRENT_COMP, reflect));
+	}
+
+	/* defining geometry */
+	numBlades = 2*(int)N;
+	y_vals = create_darr1d(numBlades);
+	angles = create_darr1d(numBlades);
+	norm_y = create_darr1d(numBlades);
+	norm_z = create_darr1d(numBlades);
+
+	/* inner angle, outer angle of vb blades */
+	inner_angle = atan(hdet/zdet);
+	outer_angle = atan(hvb/zvb);
+
+	/* y values for vb blades */	
+	double d_theta = (outer_angle - inner_angle)/ N;
+	for (int i=0; i<N; i++)
+	{
+		/* blades y>0 */
+		y_vals[i] = zvb*tan(inner_angle+(i+1)*d_theta);
+		/* blades y<0 */
+		y_vals[i+(int)N] = -y_vals[i];
+	}
+
+	/* angular rotation of vb blades for focused reflection */
+	for (int i=0; i<N; i++)
+	{
+		double y_vb = y_vals[i];
+		
+		/* incident angle from horizontal */
+		double theta0 = atan(y_vb/zvb);
+		/* reflected angle from horizontal */
+		double theta1 = atan(y_vb/(zdet-zvb));
+
+		/* mirror angle required for above reflection */
+		angles[i] = 0.5*(theta0 - theta1);
+		/* FUTURE CONSIDERATION: if implementing continuous deflection
+			(to account for slower neutrons falling due to gravity), have
+			to calculate angles[i],angles[i+N] separately given y_vals */
+		angles[i+(int)N] = -angles[i];	
+	}
+
+	/* normal vector for blade surface (y, z) */
+	for (int i=0; i<N; i++)
+	{
+		double theta = angles[i];
+		norm_y[i] = -cos(theta);
+		norm_z[i] = sin(theta);
+		norm_y[i+(int)N] = -norm_y[i]; 
+		norm_z[i+(int)N] = norm_z[i];
+	}
+%}
+
+TRACE
+%{
+	/* placeholder values for translation, rotation of VB blades */
+	double t0, t1, yp, zp, vyp, vzp;
+	double tmp;
+	/* values for reflection */
+	double q, B;
+
+	/* loop through all blade angles to check for interactions */
+	for (int i=0; i<numBlades; i++)
+	{
+
+		/* 'mirror' intersection: */
+		
+		/* translation */
+		yp = y-y_vals[i];
+		zp = z;
+		/* rotation */
+		double theta = angles[i];
+		/* rotate vectors by -theta for box_intersect to consider vb 'box' as
+			if rotated by +theta */
+		tmp = zp*cos(-theta) - yp*sin(-theta);
+		yp = zp*sin(-theta) + yp*cos(-theta);
+		zp = tmp;
+		vzp = vz*cos(-theta) - vy*sin(-theta);
+		vyp = vz*sin(-theta) + vy*cos(-theta);
+
+		double mirror_thickness = 0.0001; // 0.1 mm - arbitrarily small thickness of reflective mirror
+		if (box_intersect(&t0, &t1, x, yp, zp, vx, vyp, vzp, wvb, mirror_thickness, len)) {
+			if (t1>=0) {
+				PROP_DT(t0);
+				double vi = vy*norm_y[i] + vz*norm_z[i];	// calculate incident velocity (scalar_prod(v,norm))
+				q = fabs(2*vi*V2Q);							// calculate q[Å-1] given v[m/s]
+
+				// look up reflection probability given momentum
+				if (reflect && strlen(reflect) && strcmp(reflect,"NULL") && strcmp(reflect,"0"))
+					TableReflecFunc(q, &pTable, &B);
+			
+				// absorb, update prob given vi calculation
+				if (B <= 0) ABSORB;
+				p *= B;
+				SCATTER;
+
+				// reflect neutron around nomal vector 
+				double n_dot_v = vy*norm_y[i] + vz*norm_z[i]; 
+				vy = vy - 2*n_dot_v*norm_y[i];
+				vz = vz - 2*n_dot_v*norm_z[i];
+			}
+		}
+
+		/* 'dead zone' intersection: */
+
+		/* center of dead zone is slightly offset from center of mirror */
+		yp = (y_vals[i] - 0.5*thickness*norm_y[i]);
+		zp = -(0.5*thickness*norm_z[i]);
+		// rotate
+		tmp = zp*cos(-theta) - yp*sin(-theta);
+		yp = zp*sin(-theta) + yp*cos(-theta);
+		zp = tmp;
+
+		if (box_intersect(&t0, &t1, x, yp, zp, vx, vyp, vzp, wvb, thickness, len)) {
+			if (t1>=0) {
+				PROP_DT((t1+t0)/2);
+				SCATTER;
+				ABSORB;
+			}
+		}
+
+	}
+
+%}
+
+MCDISPLAY
+%{
+	// TODO: neutron rays seem to be reflected from above blades in trace; display problem or reflection problem?
+	for (int i=0; i<numBlades; i++)
+	{	
+		// center of box = (0, yp, zp)
+		double yp = y_vals[i] - 0.5*thickness*norm_y[i];
+		double zp = -0.5*thickness*norm_z[i];
+		double theta = angles[i];
+
+		/* absorbers */
+		double xp, ypy, ypz, zpy, zpz;
+		double ytmp, ztmp;
+		xp = wvb;
+		ypy = 0.5*thickness;
+		zpz = 0.5*len;
+		ypz = 0; zpy = 0;
+
+		// rotate vectors yp, zp by (theta, 0, 0)
+		/* y:(0,.5*thickness,0)	-> yp:(0,ypy,ypz)
+		   z:(0,0,.5*len)		-> zp:(0,zpy,zpz) */
+		ytmp = ypz*cos(theta) - ypy*sin(theta); 
+		ypy = ypz*sin(theta) + ypy*cos(theta); 
+		ypz = ytmp;
+		ztmp = zpz*cos(theta) - zpy*sin(theta); 
+		zpy = zpz*sin(theta) + zpy*cos(theta); 
+		zpz = ztmp;
+
+		// use vector addition with yp, zp to create vertices of box
+		// drawing all 12 edges of a rectangle
+		multiline(8,-xp, yp-ypy-zpy, zp-ypz-zpz,
+					-xp, yp-ypy+zpy, zp-ypz+zpz,
+					+xp, yp-ypy+zpy, zp-ypz+zpz,
+					+xp, yp-ypy-zpy, zp-ypz-zpz,
+					-xp, yp-ypy-zpy, zp-ypz-zpz,
+					-xp, yp+ypy-zpy, zp+ypz-zpz,
+					+xp, yp+ypy-zpy, zp+ypz-zpz,
+					+xp, yp-ypy-zpy, zp-ypz-zpz );
+		multiline(4,-xp, yp-ypy+zpy, zp-ypz+zpz,
+					-xp, yp+ypy+zpy, zp+ypz+zpz,
+					+xp, yp+ypy+zpy, zp+ypz+zpz,
+					+xp, yp-ypy+zpy, zp-ypz+zpz );
+		multiline(4,-xp, yp+ypy-zpy, zp+ypz-zpz,
+					-xp, yp+ypy+zpy, zp+ypz+zpz,
+					+xp, yp+ypy+zpy, zp+ypz+zpz,
+					+xp, yp+ypy-zpy, zp+ypz-zpz );
+		line(-wvb,-hvb,0,-wvb,hvb,0);
+
+		/* reflectors */
+		// different color (red?), only on bottom surface of blades
+	}
+%}
+
+END

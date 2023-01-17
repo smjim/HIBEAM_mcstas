@@ -1,0 +1,65 @@
+/*******************************************************************************
+* Instrument: (test_vb)
+*
+* %I
+* Written by: (james rogers (jamesrogers2507@gmail.com))
+* Date: (1/11/2023)
+* Origin: (University of Tennessee, Knoxville)
+*
+* %D
+* Simple test situation for debugging and viewing progress of venetian blinds 
+* component simulation
+*
+*******************************************************************************/
+
+DEFINE INSTRUMENT test_vb()
+
+TRACE
+
+COMPONENT origin = Progress_bar()
+AT (0, 0, 0) ABSOLUTE
+
+COMPONENT arm_source = Arm()
+AT (0, 0, 0) RELATIVE origin
+
+COMPONENT source_simple = Source_simple(
+    dist=1.5, 
+    focus_xw=3.0, 
+    focus_yh=3.0,    
+    lambda0=6, 
+    dlambda=0.05, 
+    flux=1E8)
+AT (0, 0, 0) RELATIVE PREVIOUS
+
+COMPONENT venbla_vertical = Venbla(
+    reflect="data/reflectivity_m6.dat",
+    N=3, 
+    zvb=1.5, 
+    zdet=6, 
+    thickness=0.2,
+    hvb=1.5, 
+    wvb=1.5, 
+    hdet=0.1)
+AT (0, 0, 1.5) RELATIVE PREVIOUS
+
+COMPONENT venbla_horizontal = Venbla(
+    reflect="data/reflectivity_m6.dat",
+    N=16, 
+    zvb=1.8, 
+    zdet=6, 
+    thickness=0.001,
+    hvb=1.5, 
+    wvb=1.5, 
+    hdet=0.1)
+AT (0, 0, 0.3) RELATIVE PREVIOUS
+ROTATED (0 ,0 ,90) RELATIVE PREVIOUS
+
+COMPONENT psd_monitor = PSD_monitor(
+    nx=128,
+    ny=128,
+    filename="PSD_mon.dat", 
+    xwidth=2.0, 
+    yheight=2.0)
+AT (0, 0, 6.0) RELATIVE origin
+
+END
