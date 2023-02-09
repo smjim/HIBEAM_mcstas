@@ -57,8 +57,6 @@ COMPONENT Source = ESS_butterfly(
     n_pulses = 1, acc_power = 2)
 AT (0,0,0) ABSOLUTE
 
-
-
 COMPONENT monolith_entrance = Arm()
 AT (0.02,0.0,2.7) RELATIVE Source
 
@@ -68,6 +66,7 @@ COMPONENT L_monitor_entrance = L_monitor(
     Lmin = 0.1, Lmax = 20)
 AT (0.0,0.0,0.0) RELATIVE monolith_entrance
 
+//*
 COMPONENT monolith_guide = Guide_gravity(
     w1 = 0.14, h1 = 0.14,
     l = 2.8, m = 4)	// m value of monolith
@@ -75,6 +74,19 @@ AT (0.0,0.0,0.0) RELATIVE monolith_entrance
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
+//*/
+/*
+COMPONENT monolith_guide = Elliptic_guide_gravity(
+    l = 2.8, majorAxisxw = 37.5002,
+    minorAxisxw = 0.13426, majorAxisyh = 37.5002,
+    minorAxisyh = 0.13426, majorAxisoffsetxw = 34.8,
+    majorAxisoffsetyh = 34.8, dimensionsAt = "entrance",
+    m = 4)			// m value of monolith
+AT (0.0,0.0,0.0) RELATIVE monolith_entrance
+EXTEND %{
+if (SCATTERED) {t = 0.0;};
+%}
+//*/
 
 COMPONENT L_monitor_exit = L_monitor(
     nL = 50, filename = "L_monitor_exit.dat",
@@ -96,42 +108,8 @@ COMPONENT psd_vb_enter = PSD_monitor(
 AT (0, 0, 12.3) RELATIVE monolith_entrance
 
 // begin VB
-/*
 COMPONENT vb_y = Venbla(
     reflect="data/refl_m6.dat",
-    N=32,
-    zvb=9.5,	// z distance from vb to source of spread
-    zdet=74.5,	// z distance from spread to target
-    len=0.3,
-    thickness=0.002,
-    hvb=0.25,
-    wvb=0.35,
-    hdet=0.25)
-AT (0, 0, 12.3) RELATIVE monolith_entrance
-EXTEND %{
-if (SCATTERED) {t = 0.0;};
-%}
-
-COMPONENT vb_x = Venbla(
-    reflect="data/refl_m6.dat",
-    N=32,
-    zvb=9.8,
-    zdet=74.5,
-    len=0.3,
-    thickness=0.001,	// x deflection blades placed vertically, dont have to deal w gravity bending
-    hvb=0.35,
-    wvb=0.25,
-    hdet=0.25)
-AT (0, 0, 0.3) RELATIVE PREVIOUS
-ROTATED (0, 0, 90) RELATIVE PREVIOUS
-EXTEND %{
-if (SCATTERED) {t = 0.0;};
-%}
-//*/
-/*	// vb arrays w Kamyshkov params
-COMPONENT vb_y = Venbla(
-    reflect="data/refl_m6.dat",
-    N=20,
     zvb=9.5,	// z distance from vb to source of spread
     zdet=74.5,	// z distance from spread to target
     len=0.3,
@@ -146,7 +124,6 @@ if (SCATTERED) {t = 0.0;};
 
 COMPONENT vb_x = Venbla(
     reflect="data/refl_m6.dat",
-    N=20,
     zvb=9.8,
     zdet=74.5,
     len=0.3,
@@ -159,7 +136,6 @@ ROTATED (0, 0, 90) RELATIVE PREVIOUS
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
-//*/
 // end VB
 
 

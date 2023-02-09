@@ -22,14 +22,13 @@
 * %P
 * INPUT PARAMETERS:
 *
-* N: [1]	(1/2) number of blades
 * zvb: [m]	z position of vb
 * zdet: [m]	z position of detector
 * len: [m]	blade length (z)
 * thickness: [m]	thickness of 'dead zone' substrate (y)
-* hvb: [m]	(1/2) height of vb array (y)
-* wvb: [m]	(1/2) width of vb array (x)
-* hdet: [m]	(1/2) height of detector (y)
+* hvb: [m]	height of vb array (y)
+* wvb: [m]	width of vb array (x)
+* hdet: [m]	height of detector (y)
 * mi: [1]	m value of material
 * reflect: [str]	Name of reflectivity file. Format q(nm-1) R(0-1). Leave "0" for 100% reflectivity
 *
@@ -43,7 +42,7 @@
 
 DEFINE COMPONENT Venbla
 DEFINITION PARAMETERS ()
-SETTING PARAMETERS (string reflect=0, N, zvb, zdet, len=0.30, thickness = 0.002,
+SETTING PARAMETERS (string reflect=0, zvb, zdet, len=0.30, thickness = 0.002,
 	hvb, wvb, hdet, mi=6)
 /* Neutron parameters: (x,y,z,vx,vy,vz,t,sx,sy,sz,p) */
 SHARE
@@ -77,8 +76,8 @@ INITIALIZE
 	/* checking for errors */
 	if (zdet < 2.*zvb)
 		{ fprintf(stderr,"vb: %s: Error: invalid focus distance\n", NAME_CURRENT_COMP); exit(-1); }
-	if (N*zvb*zdet*len*thickness*hdet*hvb*wvb == 0)
-		{ fprintf(stderr,"vb: error: %s has one of N,zvb,zdet,len,thickness,hdet,hvb null.\n", NAME_CURRENT_COMP); exit(-1); }
+	if (zvb*zdet*len*thickness*hdet*hvb*wvb == 0)
+		{ fprintf(stderr,"vb: error: %s has one of zvb,zdet,len,thickness,hdet,hvb null.\n", NAME_CURRENT_COMP); exit(-1); }
 
 	if (reflect && strlen(reflect) && strcmp(reflect,"NULL") && strcmp(reflect,"0")) {
 		if (Table_Read(&pTable, reflect, 1) <= 0) /* read 1st block data from file into pTable */
@@ -86,52 +85,94 @@ INITIALIZE
 	}
 
 	/* defining geometry */
-	numBlades = 2*(int)N;
-	y_vals = create_darr1d(numBlades);
-	angles = create_darr1d(numBlades);
-	norm_y = create_darr1d(numBlades);
-	norm_z = create_darr1d(numBlades);
+	// assume that there will be less than 1000 blades used
+	y_vals = create_darr1d(1000);
+	angles = create_darr1d(1000);
+	norm_y = create_darr1d(1000);
+	norm_z = create_darr1d(1000);
 
 	/* inner angle, outer angle of vb blades */
-	inner_angle = atan(hdet/zdet);
-	outer_angle = atan(hvb/zvb);
+	inner_angle = atan((hdet/2.)/zdet);
+	outer_angle = atan((hvb/2.)/zvb);
 
-	/* y values for vb blades */	
-	double d_theta = (outer_angle - inner_angle)/ N;
-	for (int i=0; i<N; i++)
+	/* 
+	step by step for finding blade position, angle which will be used to define
+	 bounding box for intersection and such and such ...
+		1. start with top blade, pos = (z0, hvb), angle = formula given y=hvb, z=z0
+		2. using center pos, angle, length, find angle towards top right point of blade
+		3. using angle toward top right point of blade, find intersection with z0 to define start (bottom left) point of next blade
+		4. find angle of new blade through (???)
+			a. there may be an analytical solution to this geometric problem but I am unable to figure it out right now unfortunately
+			b. current implementation will work by numerical approximation
+	*/
+
+	// define blade 0 params
+	// while blades within max angle, min angle do:
+		// define next blade from previous blade
+		// find angle of blade *no analytical method found yet
+			// theta_maxb = angle to hit pos (will be already calculated in order to find hit pos)
+			// vary ypos from y_hit to y_hit+tan(theta_maxb)
+				// test if reflection off blade hits y_target at z1
+				// if y_z1>y_target then adjust angle lower, if y_z1<y_target adjust angle higher 
+					// repeat until y_z1-y_target within threshold (0.01)
+					// *possible for great improve this numerical method
+					// *angle adjustment proportional to difference
+	
+	/* define top blade */
+	// pos = (z0, hvb)
+	y_vals[0] = hvb/2.;
+	// mirror angle required for reflection
+	angles[0] = 0.5*(atan((hvb/2.)/zvb) - atan(hvb/(zdet-zvb)));
+
+	/* define upper blade array */
+	int i = 0;
+	//fprintf(stderr,"inner angle: %f, outer angle: %f\n", inner_angle, outer_angle); 
+	while ((inner_angle <= atan(y_vals[i]/zvb)) && (atan(y_vals[i]/zvb) <= outer_angle))
 	{
-		/* blades y>0 */
-		y_vals[i] = zvb*tan(inner_angle+(i+1)*d_theta);
-		/* blades y<0 */
-		y_vals[i+(int)N] = -y_vals[i];
+		i += 1;
+
+		// angle for ray to max z of previous blade
+		double theta = atan((y_vals[i-1]+(len/2.)*tan(angles[i-1]))/(zvb+len/2.));
+
+		double y0 = (zvb-(len/2.))*tan(theta);
+
+		//// using kamyshkov's iterative\' method
+		double yrc = y0;		// yrc is y center of reflection on blade, initially defined as start of blade
+		double yrctmp = yrc+1;	// yrctmp is previous yrc, used to determine when to end loop
+		double ydet = 0;		// placeholder for y pos of detector, can be shifted throughout run to counteract effect of gravity on slow neutrons
+		double ysrc = 0;		// placeholder for y pos of source
+
+		while (yrctmp-yrc < 0.000001)
+		{
+			yrctmp = yrc;
+			double delta = 0.5*(atan((zdet-(zvb+len/2.))/(yrc-ydet))-atan((len/2.)/(yrc-ysrc)));
+
+			yrc = y0+tan(delta)*(len/2.);
+		}
+		y_vals[i] = yrc;
+		angles[i] = atan((yrc-y0)/(len/2.));
+
+		//fprintf(stderr,"i: %d, angle: %f, yrc: %f\n", i, angles[i], y_vals[i]); 
 	}
 
-	/* angular rotation of vb blades for focused reflection */
-	for (int i=0; i<N; i++)
+	// define lower blades **currently not functional with ydet focusing, correction for gravitational effect
+	for (int j = i+1; j < 2*(i+1); j++)
 	{
-		double y_vb = y_vals[i];
-		
-		/* incident angle from horizontal */
-		double theta0 = atan(y_vb/zvb);
-		/* reflected angle from horizontal */
-		double theta1 = atan(y_vb/(zdet-zvb));
-
-		/* mirror angle required for above reflection */
-		angles[i] = 0.5*(theta0 - theta1);
-		/* FUTURE CONSIDERATION: if implementing continuous deflection
-			(to account for slower neutrons falling due to gravity), have
-			to calculate angles[i],angles[i+N] separately given y_vals */
-		angles[i+(int)N] = -angles[i];	
+		angles[j] = -angles[j-i];
+		y_vals[j] = -y_vals[j-i];
 	}
+
+	numBlades = 2*(i+1);
+	fprintf(stderr,"numBlades: %d\n", numBlades); 
 
 	/* normal vector for blade surface (y, z) */
-	for (int i=0; i<N; i++)
+	for (int j=0; j<i+1; j++)
 	{
-		double theta = angles[i];
-		norm_y[i] = -cos(theta);
-		norm_z[i] = sin(theta);
-		norm_y[i+(int)N] = -norm_y[i]; 
-		norm_z[i+(int)N] = norm_z[i];
+		double theta = angles[j];
+		norm_y[j] = -cos(theta);
+		norm_z[j] = sin(theta);
+		norm_y[j+(i+1)] = -norm_y[j]; 
+		norm_z[j+(i+1)] = norm_z[j];
 	}
 %}
 
@@ -163,7 +204,7 @@ TRACE
 		vyp = vz*sin(-theta) + vy*cos(-theta);
 
 		double mirror_thickness = 0.0001; // 0.1 mm - arbitrarily small thickness of reflective mirror
-		if (box_intersect(&t0, &t1, x, yp, zp, vx, vyp, vzp, wvb, mirror_thickness, len)) {
+		if (box_intersect(&t0, &t1, x, yp, zp, vx, vyp, vzp, wvb/2., mirror_thickness, len)) {
 			if (t1>=0) {
 				PROP_DT(t0);
 				double vi = vy*norm_y[i] + vz*norm_z[i];	// calculate incident velocity (scalar_prod(v,norm))
@@ -195,7 +236,7 @@ TRACE
 		yp = zp*sin(-theta) + yp*cos(-theta);
 		zp = tmp;
 
-		if (box_intersect(&t0, &t1, x, yp, zp, vx, vyp, vzp, wvb, thickness, len)) {
+		if (box_intersect(&t0, &t1, x, yp, zp, vx, vyp, vzp, wvb/2., thickness, len)) {
 			if (t1>=0) {
 				PROP_DT((t1+t0)/2);
 				SCATTER;
@@ -220,7 +261,7 @@ MCDISPLAY
 		/* absorbers */
 		double xp, ypy, ypz, zpy, zpz;
 		double ytmp, ztmp;
-		xp = wvb;
+		xp = wvb/2.;
 		ypy = 0.5*thickness;
 		zpz = 0.5*len;
 		ypz = 0; zpy = 0;
@@ -253,7 +294,7 @@ MCDISPLAY
 					-xp, yp+ypy+zpy, zp+ypz+zpz,
 					+xp, yp+ypy+zpy, zp+ypz+zpz,
 					+xp, yp+ypy-zpy, zp+ypz-zpz );
-		line(-wvb,-hvb,0,-wvb,hvb,0);
+		line(-wvb/2.,-hvb/2.,0,-wvb/2.,hvb/2.,0);
 
 		/* reflectors */
 		// different color (red?), only on bottom surface of blades
