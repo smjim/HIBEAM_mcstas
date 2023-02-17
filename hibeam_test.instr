@@ -1,4 +1,4 @@
-/********************************************************************************
+	/********************************************************************************
 * 
 * McStas, neutron ray-tracing package
 *         Copyright (C) 1997-2008, All rights reserved
@@ -30,6 +30,8 @@ DEFINE INSTRUMENT e5 (
 
 DECLARE 
 %{
+double zpos = 12.3;
+double length = 0.3;
 %}
 
 INITIALIZE 
@@ -69,7 +71,7 @@ AT (0.0,0.0,0.0) RELATIVE monolith_entrance
 //*
 COMPONENT monolith_guide = Guide_gravity(
     w1 = 0.14, h1 = 0.14,
-    l = 2.8, m = 4)	// m value of monolith
+    l = 2.8, m = 5)	// m value of monolith
 AT (0.0,0.0,0.0) RELATIVE monolith_entrance
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
@@ -108,34 +110,36 @@ COMPONENT psd_vb_enter = PSD_monitor(
 AT (0, 0, 12.3) RELATIVE monolith_entrance
 
 // begin VB
+//*
 COMPONENT vb_y = Venbla(
     reflect="data/refl_m6.dat",
-    zvb=9.5,	// z distance from vb to source of spread
-    zdet=74.5,	// z distance from spread to target
-    len=0.3,
+    zvb=zpos,	// z distance from vb to source
+    zdet=75,	// z distance from source
+    len=length,
     thickness=0.002,
     hvb=0.5,
     wvb=0.7,
     hdet=0.5)
-AT (0, 0, 12.3) RELATIVE monolith_entrance
+AT (0, 0, zpos) RELATIVE monolith_entrance	// monolith entrance 2.7m from source
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
 
 COMPONENT vb_x = Venbla(
     reflect="data/refl_m6.dat",
-    zvb=9.8,
-    zdet=74.5,
-    len=0.3,
+    zvb=zpos+length,
+    zdet=75,
+    len=length,
     thickness=0.001,	// x deflection blades placed vertically, dont have to deal w gravity bending
     hvb=0.7,
     wvb=0.5,
     hdet=0.5)
-AT (0, 0, 0.3) RELATIVE PREVIOUS
+AT (0, 0, length) RELATIVE PREVIOUS
 ROTATED (0, 0, 90) RELATIVE PREVIOUS
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
+//*/
 // end VB
 
 
@@ -145,16 +149,25 @@ COMPONENT PSD_monitor_target = Monitor_nD(
     restore_neutron=1)
 AT (0.0,0.0,72.3) RELATIVE monolith_entrance
 
-COMPONENT PSD_large_target = PSD_monitor(
+COMPONENT PSD_large_target_1 = PSD_monitor(
     nx=128,
     ny=128,
-    filename="PSD_large_target.dat", 
+    filename="PSD_large_target1.dat", 
     xwidth=2.0, 
     yheight=2.0,
     restore_neutron=1)
 AT (0, 0, 1E-9) RELATIVE PREVIOUS
 
-COMPONENT TOF_radial_target = Monitor_nD(
+COMPONENT PSD_large_target_2 = PSD_monitor(
+    nx=128,
+    ny=128,
+    filename="PSD_large_target2.dat", 
+    xwidth=8.0, 
+    yheight=8.0,
+    restore_neutron=1)
+AT (0, 0, 1E-9) RELATIVE PREVIOUS
+
+COMPONENT TOF_radial_target_1 = Monitor_nD(
     xwidth = 1, yheight = 1,
     options = "list=all x y radius t",
     filename = "TOF_target_radial.dat")
