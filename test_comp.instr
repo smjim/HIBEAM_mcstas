@@ -1,18 +1,15 @@
 /*******************************************************************************
-* Instrument: (test_vb)
+* Instrument: (test_comp)
 *
 * %I
 * Written by: (james rogers (jamesrogers2507@gmail.com))
-* Date: (1/11/2023)
+* Date: (24/02/2023)
 * Origin: (University of Tennessee, Knoxville)
-*
-* %D
-* Simple test situation for debugging and viewing progress of venetian blinds 
-* component simulation
 *
 *******************************************************************************/
 
-DEFINE INSTRUMENT test_vb()
+/* instrument definition: name, parameters & default values */
+DEFINE INSTRUMENT tutorial_SANS()
 
 TRACE
 
@@ -22,44 +19,40 @@ AT (0, 0, 0) ABSOLUTE
 COMPONENT arm_source = Arm()
 AT (0, 0, 0) RELATIVE origin
 
-COMPONENT source_simple = Source_simple(
-    dist=1.5, 
-    focus_xw=3.0, 
-    focus_yh=3.0,    
+COMPONENT source = Source_simple(
+    radius=0.02, 
+    dist=20, 
+    focus_xw=1.98, 
+    focus_yh=1.98, 
     lambda0=6, 
     dlambda=0.05, 
     flux=1E8)
 AT (0, 0, 0) RELATIVE PREVIOUS
 
-COMPONENT venbla_vertical = Venbla(
-    reflect="data/reflectivity_m6.dat",
-    N=3, 
-    zvb=1.5, 
-    zdet=6, 
-    thickness=0.2,
-    hvb=1.5, 
-    wvb=1.5, 
-    hdet=0.1)
-AT (0, 0, 1.5) RELATIVE PREVIOUS
-
-COMPONENT venbla_horizontal = Venbla(
-    reflect="data/reflectivity_m6.dat",
-    N=16, 
-    zvb=1.8, 
-    zdet=6, 
-    thickness=0.001,
-    hvb=1.5, 
-    wvb=1.5, 
-    hdet=0.1)
-AT (0, 0, 0.3) RELATIVE PREVIOUS
-ROTATED (0 ,0 ,90) RELATIVE PREVIOUS
+COMPONENT venbla_y = Venbla(
+    reflect="data/refl_m6.dat", 
+    ydet=0.0,
+    zvb=8, 
+    zdet=20, 
+    ydet=0,
+    hvb=0.6, 
+    wvb=0.6, 
+    hdet=0.2)
+AT (0, 0, 8) RELATIVE source
 
 COMPONENT psd_monitor = PSD_monitor(
-    nx=128,
-    ny=128,
+    nx=128, 
+    ny=128, 
     filename="PSD_mon.dat", 
     xwidth=2.0, 
     yheight=2.0)
-AT (0, 0, 6.0) RELATIVE origin
+AT (0, 0, 20) RELATIVE source
+
+/*
+COMPONENT TOF_monitor_target = Monitor_nD(
+    xwidth = 1, yheight = 1,
+    options = "t limits=[0,5e-1] bins=100", filename = "TOF_monitor_target.dat")
+AT (0.0,0.0,1E-9) RELATIVE PREVIOUS
+*/
 
 END
