@@ -11,6 +11,24 @@
 /* instrument definition: name, parameters & default values */
 DEFINE INSTRUMENT tutorial_SANS()
 
+DECLARE
+%{
+    double yshift;
+    double zpos;
+    double height;
+    double width;
+    double length;
+%}
+
+INITIALIZE
+%{
+    yshift = 0.0;	// ydet
+    zpos = 10.0; 	// 10 15 20 //zvb
+    height = 0.52; 	// 0.52 0.80 1.06 //hvb
+    width = height;	// wvb
+    length = 0.3;	// len
+%}
+
 TRACE
 
 COMPONENT origin = Progress_bar()
@@ -21,32 +39,32 @@ AT (0, 0, 0) RELATIVE origin
 
 COMPONENT source = Source_simple(
     radius=0.02, 
-    dist=20, 
-    focus_xw=1.98, 
-    focus_yh=1.98, 
+    dist=75, 
+    focus_xw=3.96, 
+    focus_yh=3.96, 
     lambda0=6, 
-    dlambda=0.05, 
+    dlambda=0.05,
     flux=1E8)
 AT (0, 0, 0) RELATIVE PREVIOUS
 
 COMPONENT venbla_y = Venbla(
     reflect="data/refl_m6.dat", 
-    ydet=0.0,
-    zvb=8, 
-    zdet=20, 
-    ydet=0,
-    hvb=0.6, 
-    wvb=0.6, 
+    ydet=yshift,
+    zvb=zpos, 
+    zdet=75, 
+    len=length,
+    hvb=height,
+    wvb=width, 
     hdet=0.2)
-AT (0, 0, 8) RELATIVE source
+AT (0, 0, zpos) RELATIVE source
 
 COMPONENT psd_monitor = PSD_monitor(
     nx=128, 
     ny=128, 
     filename="PSD_mon.dat", 
-    xwidth=2.0, 
-    yheight=2.0)
-AT (0, 0, 20) RELATIVE source
+    xwidth=4.0, 
+    yheight=4.0)
+AT (0, 0, 75) RELATIVE source
 
 /*
 COMPONENT TOF_monitor_target = Monitor_nD(
@@ -54,5 +72,12 @@ COMPONENT TOF_monitor_target = Monitor_nD(
     options = "t limits=[0,5e-1] bins=100", filename = "TOF_monitor_target.dat")
 AT (0.0,0.0,1E-9) RELATIVE PREVIOUS
 */
+
+COMPONENT TOF_radial_target_1 = Monitor_nD(
+    xwidth = 2, yheight = 2,
+    options = "list=all x y radius t", 
+    filename = "TOF_target_radial.dat")
+AT (0.0,0.0,1E-9) RELATIVE PREVIOUS
+
 
 END

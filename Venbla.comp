@@ -141,7 +141,7 @@ INITIALIZE
 	}
 
 	/* targeted reflection */
-	fprintf(stderr,"# i, angles[i], y_vals[i]\n");
+	fprintf(stderr,"# i, angles[i], y_vals[i], d_angle\n");
 	for (int j = 0; j < numBlades; j++)
 	{
 		/* if j<i, reflecting surface on bottom of blade
@@ -158,14 +158,9 @@ INITIALIZE
 
 		// shift all blades by d_angle to target reflection to (zdet, ydet)
 		double d_angle = 0.5*(atan(yrc/(zdet-zvb)) - atan((yrc-ydet)/(zdet-zvb)));
-		//fprintf(stderr,"d_angle: %f, angles[j]: %f, \n", d_angle, angles[j]);
-		if (j<i)
-			angles[j] += d_angle;
-		if (i<=j)
-			angles[j] += d_angle;
-
+		angles[j] += d_angle;
 		
-		fprintf(stderr,"%d %f %f\n", j, angles[j], y_vals[j]);
+		fprintf(stderr,"%d %f %f %f\n", j, angles[j], y_vals[j], d_angle);
 	}
 
 	if (y_vals[i]>y_vals[i-1]-thickness)
@@ -238,9 +233,10 @@ TRACE
 		/* 'dead zone' intersection: */
 
 		/* translation */
-		yp = y_vals[i];
-		zp = 0;
+		yp = y - y_vals[i];
+		zp = z - 0;
 		/* rotation */
+		theta = -angles[i];
 		tmp = zp*cos(-theta) - yp*sin(-theta);
 		yp = zp*sin(-theta) + yp*cos(-theta);
 		zp = tmp;
@@ -252,7 +248,6 @@ TRACE
 				ABSORB;
 			}
 		}
-
 	}
 
 %}
@@ -302,8 +297,11 @@ MCDISPLAY
 					-xp, yp+ypy+zpy, zp+ypz+zpz,
 					+xp, yp+ypy+zpy, zp+ypz+zpz,
 					+xp, yp+ypy-zpy, zp+ypz-zpz );
-		//line(-wvb/2.,-hvb/2.,0,-wvb/2.,hvb/2.,0);
 
+		// line from point source to blade bottom right (shows full solid angle covering geometry)
+		//line(0, 0, zp-zvb, 
+		//	0, yp-ypy+zpy, zp+ypz+zpz);
+		
 		/* reflectors */
 		// different color (red?), only on bottom surface of blades
 	}
