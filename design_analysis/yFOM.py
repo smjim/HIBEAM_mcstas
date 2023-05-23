@@ -7,9 +7,9 @@ import sys
 inFile = sys.argv[1]
 data = np.loadtxt(inFile, dtype='float')
 
-y_m = 0.0 #0.95
+y_m = 0.001 #0.95
 i = 100
-size = 1.00 #0.5
+size = 0.01 #0.5
 ymin = y_m-size
 ymax = y_m+size
 dy = (ymax - ymin)/ (2*i)

@@ -227,7 +227,7 @@ TRACE
 				double n_dot_v = vy*norm_y[i] + vz*norm_z[i]; 
 				vy = vy - 2*n_dot_v*norm_y[i];
 				vz = vz - 2*n_dot_v*norm_z[i];
-			}
+			} 
 		}
 
 		/* 'dead zone' intersection: */
@@ -240,16 +240,29 @@ TRACE
 		tmp = zp*cos(-theta) - yp*sin(-theta);
 		yp = zp*sin(-theta) + yp*cos(-theta);
 		zp = tmp;
+		t0 = 0; t1=0;
 
 		if (box_intersect(&t0, &t1, x, yp, zp, vx, vyp, vzp, wvb, thickness, len)) {
 			if (t1>=0) {
 				PROP_DT((t1+t0)/2);
 				SCATTER;
 				ABSORB;
+			} else if (t0!=0) {	// if neutron is reflected off of embedded side of mirror, ray only intersects with substrate once
+				SCATTER;
+				ABSORB;
+				fprintf(stderr,"%f, ",t0);	
 			}
 		}
-	}
 
+	}
+%}
+
+FINALLY
+%{
+	destroy_darr1d(y_vals);
+	destroy_darr1d(angles);
+	destroy_darr1d(norm_y);
+	destroy_darr1d(norm_z);
 %}
 
 MCDISPLAY
