@@ -62,7 +62,7 @@ COMPONENT nboa_engineering_constraints = Shape(
  geometry = "eng_constraints/nboa_engineering_constraints.off")
 AT (0.0,-0.05499999999999999,-1.757) RELATIVE BPCS
 
-COMPONENT slit = Slit(
+COMPONENT monolith_entrance = Slit(
  xmin = -0.042645, xmax = 0.042645,
  ymin = -0.0896276, ymax = 0.0216309)
 AT (0.0,0,-3.5) RELATIVE BPCS
@@ -93,7 +93,7 @@ COMPONENT psd_vb_enter = PSD_monitor(
     xwidth=wvb, 
     yheight=hvb,
     restore_neutron=1)
-AT (0, 0, zvb-length/2.) RELATIVE monolith_entrance
+AT (0, 0, 0.5*zvb-length) RELATIVE monolith_entrance
 
 COMPONENT TOF_radial_before = Monitor_nD(
     xwidth = 2, yheight = 2,
@@ -108,7 +108,7 @@ COMPONENT vb_y = Venbla(
     ydet=ydet,		// y displacement of detector
     len=length,
     thickness=thickness,
-    hvb=hbv,
+    hvb=hvb,
     wvb=wvb,
     hdet=hdet)
 AT (0, 0, zvb) RELATIVE monolith_entrance	// monolith entrance 2.7m from source
@@ -118,7 +118,7 @@ if (SCATTERED) {t = 0.0;};
 
 COMPONENT vb_x = Venbla(
     reflect="refl_data/refl_m6.dat",
-    zvb=zpos+length+0.01,	
+    zvb=zvb+length+0.01,	
     zdet=zdet-length-0.01,
     ydet=ydet,
     len=length,
@@ -139,7 +139,7 @@ COMPONENT psd_vb_exit = PSD_monitor(
     xwidth=wvb, 
     yheight=hvb,
     restore_neutron=1)
-AT (0, 0, length/2) RELATIVE PREVIOUS 
+AT (0, 0, 0.5*length) RELATIVE PREVIOUS 
 
 COMPONENT TOF_radial_after = Monitor_nD(
     xwidth = 2, yheight = 2,

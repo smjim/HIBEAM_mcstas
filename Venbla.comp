@@ -229,7 +229,6 @@ TRACE
 				q = fabs(2*vi*V2Q);							// calculate q[Å-1] given v[m/s]
 
 				/* Now compute reflectivity. */
-				weight = 1.0; 
     			if(m == 0)
 					ABSORB;
 				if (reflect && table_present==1)
