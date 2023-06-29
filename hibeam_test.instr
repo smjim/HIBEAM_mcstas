@@ -29,6 +29,7 @@ DEFINE INSTRUMENT e5 (	double zvb = 12.3, 							// z position of Venetian blind
 						double length = 0.3, 						// z extent of Venetian blinds [m]
 						double thickness = 0.002,					// thickness of Venetian blinds blades [m]
 						double ydet = 0,							// vertical offset of target relative to venetian blinds [m]
+						double yvb = 0,								// vertical offset of vb [m]
 						double hvb = 0.4,							// total vertical extent of venetian blinds (height) [m]
 						double wvb = 0.4, 							// total horizontal extent of venetian blinds (width) [m]
 						double hdet = 0.5,							// total vertical extent of detector (for VB focusing) [m] 
@@ -93,7 +94,7 @@ COMPONENT psd_vb_enter = PSD_monitor(
     xwidth=wvb, 
     yheight=hvb,
     restore_neutron=1)
-AT (0, 0, 0.5*zvb-length) RELATIVE monolith_entrance
+AT (0, yvb, 0.5*zvb-length) RELATIVE monolith_entrance
 
 COMPONENT TOF_radial_before = Monitor_nD(
     xwidth = 2, yheight = 2,
@@ -111,7 +112,7 @@ COMPONENT vb_y = Venbla(
     hvb=hvb,
     wvb=wvb,
     hdet=hdet)
-AT (0, 0, zvb) RELATIVE monolith_entrance	// monolith entrance 2.7m from source
+AT (0, yvb, zvb) RELATIVE monolith_entrance	// monolith entrance 2.7m from source
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
