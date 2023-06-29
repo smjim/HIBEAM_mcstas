@@ -1,4 +1,4 @@
-	/********************************************************************************
+/********************************************************************************
 * 
 * McStas, neutron ray-tracing package
 *         Copyright (C) 1997-2008, All rights reserved
@@ -25,13 +25,18 @@
 * %End 
 ********************************************************************************/
 
-DEFINE INSTRUMENT e5 (
+DEFINE INSTRUMENT e5 (	double zpos = 12.3, 						// z position of Venetian blinds relative to monolith entrance [m]
+						double length = 0.3, 						// z extent of Venetian blinds [m]
+						double thickness = 0.002,					// thickness of Venetian blinds blades [m]
+						double ydet = 0,							// vertical offset of target relative to venetian blinds [m]
+						double hvb = 0.4,							// total vertical extent of venetian blinds (height) [m]
+						double wvb = 0.4, 							// total horizontal extent of venetian blinds (width) [m]
+						double hdet = 0.5,							// total vertical extent of detector (for VB focusing) [m] 
+						double zdet = 65							// z position of target relative to monolith entrance [m] 
 )
 
 DECLARE 
 %{
-double zpos = 12.3;
-double length = 0.3;
 %}
 
 INITIALIZE 
@@ -75,7 +80,7 @@ AT (0.0,0.0,0.0) RELATIVE monolith_entrance
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
-//*/
+
 /*
 COMPONENT monolith_guide = Elliptic_guide_gravity(
     l = 2.8, majorAxisxw = 37.5002,
@@ -87,7 +92,7 @@ AT (0.0,0.0,0.0) RELATIVE monolith_entrance
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
-//*/
+*/
 
 COMPONENT L_monitor_exit = L_monitor(
     nL = 50, filename = "L_monitor_exit.dat",
@@ -95,52 +100,54 @@ COMPONENT L_monitor_exit = L_monitor(
     Lmin = 0.1, Lmax = 20)
 AT (0.0,0.0,2.8) RELATIVE monolith_entrance
 
+/*
 COMPONENT MCPL_output = MCPL_output(
     filename = "e5")
 AT (0.0,0.0,0.0) RELATIVE Source
+*/
 
 COMPONENT psd_vb_enter = PSD_monitor(
     nx=128,
     ny=128,
     filename="PSD_vb_enter.dat", 
-    xwidth=0.7, 
-    yheight=0.5,
+    xwidth=wvb, 
+    yheight=hvb,
     restore_neutron=1)
-AT (0, 0, 12.3) RELATIVE monolith_entrance
+AT (0, 0, zvb) RELATIVE monolith_entrance
 
 // begin VB
-//*
+
 COMPONENT vb_y = Venbla(
-    reflect="data/refl_m6.dat",
-    zvb=zpos,	// z distance from vb to source
-    zdet=75,	// z distance from source
-    ydet=1.00,	// y displacement of detector
+    reflect="refl_data/refl_m6.dat",
+    zvb=zvb,		// z distance from vb to source
+    zdet=zdet+zvb,	// z distance from source
+    ydet=ydet,		// y displacement of detector
     len=length,
-    thickness=0.002,
-    hvb=0.5,
-    wvb=0.7,
-    hdet=0.5)
+    thickness=thickness,
+    hvb=hbv,
+    wvb=wvb,
+    hdet=hdet)
 AT (0, 0, zpos) RELATIVE monolith_entrance	// monolith entrance 2.7m from source
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
 
 COMPONENT vb_x = Venbla(
-    reflect="data/refl_m6.dat",
+    reflect="refl_data/refl_m6.dat",
     zvb=zpos+length+0.01,
-    zdet=75,
-    ydet=0,
+    zdet=zdet+zvb,
+    ydet=ydet,
     len=length,
-    thickness=0.001,	// x deflection blades placed vertically, dont have to deal w gravity bending
-    hvb=0.7,
-    wvb=0.5,
-    hdet=0.5)
+    thickness=thickness/2,	// x deflection blades placed vertically, dont have to deal w gravity bending
+    hvb=wvb,
+    wvb=hvb,
+    hdet=hdet)
 AT (0, 0, length+0.01) RELATIVE PREVIOUS
 ROTATED (0, 0, 90) RELATIVE PREVIOUS
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
-//*/
+
 // end VB 
 
 COMPONENT PSD_monitor_target = Monitor_nD(
