@@ -15,7 +15,7 @@
 * 
 * %Identification
 * Written by: Python McStas Instrument Generator
-* Date: 19:37:34 on January 02, 2023
+* Date: 13:16:06 on April 18, 2023
 * Origin: ESS DMSC
 * %INSTRUMENT_SITE: Generated_instruments
 * 
@@ -25,14 +25,14 @@
 * %End 
 ********************************************************************************/
 
-DEFINE INSTRUMENT e5 (	double zpos = 12.3, 						// z position of Venetian blinds relative to monolith entrance [m]
+DEFINE INSTRUMENT e5 (	double zvb = 12.3, 							// z position of Venetian blinds relative to monolith entrance [m]
 						double length = 0.3, 						// z extent of Venetian blinds [m]
 						double thickness = 0.002,					// thickness of Venetian blinds blades [m]
 						double ydet = 0,							// vertical offset of target relative to venetian blinds [m]
 						double hvb = 0.4,							// total vertical extent of venetian blinds (height) [m]
 						double wvb = 0.4, 							// total horizontal extent of venetian blinds (width) [m]
 						double hdet = 0.5,							// total vertical extent of detector (for VB focusing) [m] 
-						double zdet = 65							// z position of target relative to monolith entrance [m] 
+						double zdet = 55							// z position of target relative to venetian blinds [m] 
 )
 
 DECLARE 
@@ -41,70 +41,50 @@ DECLARE
 
 INITIALIZE 
 %{
-// Start of initialize for generated e5
 %}
 
 TRACE 
 COMPONENT progressbar = Progress_bar()
 AT (0,0,0) ABSOLUTE
 
-COMPONENT vinROT2 = Arm()
-AT (0,0,0) ABSOLUTE
-ROTATED (0,-90,0) ABSOLUTE
-
-COMPONENT vinROT1 = Arm()
-AT (0,0,0) RELATIVE vinROT2
-ROTATED (-90,0,0) RELATIVE vinROT2
-
 COMPONENT Source = ESS_butterfly(
-    sector = "E", beamline = 5,
-    cold_frac = 0.7, dist = 2.7,
-    focus_xw = 0.14, focus_yh = 0.14,
-    Lmin = 0.1, Lmax = 20,
-    n_pulses = 1, acc_power = 2)
+ sector = "E", beamline = 5,
+ cold_frac = 0.7, dist = 1.89088,
+ focus_xw = 0.102, focus_yh = 0.276,
+ Lmin = 0.1, Lmax = 20,
+ n_pulses = 1, acc_power = 2)
 AT (0,0,0) ABSOLUTE
-COMPONENT monolith_entrance = Arm()
-AT (0.02,0.0,2.7) RELATIVE Source
 
-COMPONENT L_monitor_entrance = L_monitor(
-    nL = 50, filename = "L_monitor_entrance.dat",
-    xwidth = 0.14, yheight = 0.14,
-    Lmin = 0.1, Lmax = 20)
-AT (0.0,0.0,0.0) RELATIVE monolith_entrance
+COMPONENT BPCS = Arm()
+AT (0.0,0.0,5.390879753610776) RELATIVE Source
 
-//*
-COMPONENT monolith_guide = Guide_gravity(
-    w1 = 0.14, h1 = 0.14,
-    l = 2.8, m = 5)	// m value of monolith
-AT (0.0,0.0,0.0) RELATIVE monolith_entrance
+COMPONENT nboa_engineering_constraints = Shape(
+ geometry = "eng_constraints/nboa_engineering_constraints.off")
+AT (0.0,-0.05499999999999999,-1.757) RELATIVE BPCS
+
+COMPONENT slit = Slit(
+ xmin = -0.042645, xmax = 0.042645,
+ ymin = -0.0896276, ymax = 0.0216309)
+AT (0.0,0,-3.5) RELATIVE BPCS
+
+COMPONENT monolith_guide = Guide_anyshape(
+ m = 2, geometry = "eng_constraints/monolith_guide.off")
+AT (0,0,32.0) RELATIVE BPCS
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
 
-/*
-COMPONENT monolith_guide = Elliptic_guide_gravity(
-    l = 2.8, majorAxisxw = 37.5002,
-    minorAxisxw = 0.13426, majorAxisyh = 37.5002,
-    minorAxisyh = 0.13426, majorAxisoffsetxw = 34.8,
-    majorAxisoffsetyh = 34.8, dimensionsAt = "entrance",
-    m = 4)			// m value of monolith
-AT (0.0,0.0,0.0) RELATIVE monolith_entrance
-EXTEND %{
-if (SCATTERED) {t = 0.0;};
-%}
-*/
-
-COMPONENT L_monitor_exit = L_monitor(
-    nL = 50, filename = "L_monitor_exit.dat",
-    xwidth = 0.14, yheight = 0.14,
-    Lmin = 0.1, Lmax = 20)
-AT (0.0,0.0,2.8) RELATIVE monolith_entrance
+COMPONENT Al_window_exit = Al_window(
+ thickness = 0.002)
+AT (0,-0.145,0) RELATIVE BPCS
 
 /*
 COMPONENT MCPL_output = MCPL_output(
-    filename = "e5")
-AT (0.0,0.0,0.0) RELATIVE Source
+ filename = "e5")
+AT (0.0,0.0,0.0) ABSOLUTE
 */
+
+/* start of venbla */
 
 COMPONENT psd_vb_enter = PSD_monitor(
     nx=128,
@@ -113,76 +93,75 @@ COMPONENT psd_vb_enter = PSD_monitor(
     xwidth=wvb, 
     yheight=hvb,
     restore_neutron=1)
-AT (0, 0, zvb) RELATIVE monolith_entrance
+AT (0, 0, zvb-length/2.) RELATIVE monolith_entrance
 
-// begin VB
+COMPONENT TOF_radial_before = Monitor_nD(
+    xwidth = 2, yheight = 2,
+    restore_neutron=1, options = "list=all x y vx vy radius t",
+    filename = "TOF_radial_before.dat")
+AT (0, 0, 1E-9) RELATIVE PREVIOUS
 
 COMPONENT vb_y = Venbla(
     reflect="refl_data/refl_m6.dat",
-    zvb=zvb,		// z distance from vb to source
-    zdet=zdet+zvb,	// z distance from source
+    zvb=zvb,		// z distance from source to vb
+    zdet=zdet,		// z distance from vb to target 
     ydet=ydet,		// y displacement of detector
     len=length,
     thickness=thickness,
     hvb=hbv,
     wvb=wvb,
     hdet=hdet)
-AT (0, 0, zpos) RELATIVE monolith_entrance	// monolith entrance 2.7m from source
+AT (0, 0, zvb) RELATIVE monolith_entrance	// monolith entrance 2.7m from source
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
 
 COMPONENT vb_x = Venbla(
     reflect="refl_data/refl_m6.dat",
-    zvb=zpos+length+0.01,
-    zdet=zdet+zvb,
+    zvb=zpos+length+0.01,	
+    zdet=zdet-length-0.01,
     ydet=ydet,
     len=length,
     thickness=thickness/2,	// x deflection blades placed vertically, dont have to deal w gravity bending
     hvb=wvb,
     wvb=hvb,
     hdet=hdet)
-AT (0, 0, length+0.01) RELATIVE PREVIOUS
+AT (0, 0, length+0.01) RELATIVE PREVIOUS // 1cm gap between vb sets 
 ROTATED (0, 0, 90) RELATIVE PREVIOUS
 EXTEND %{
 if (SCATTERED) {t = 0.0;};
 %}
 
-// end VB 
-
-COMPONENT PSD_monitor_target = Monitor_nD(
-    xwidth = 0.5, yheight = 0.5,
-    options = "x y", filename = "PSD_target.dat",
-    restore_neutron=1)
-AT (0.0,0.0,72.3) RELATIVE monolith_entrance
-
-COMPONENT PSD_large_target_1 = PSD_monitor(
+COMPONENT psd_vb_exit = PSD_monitor(
     nx=128,
     ny=128,
-    filename="PSD_large_target1.dat", 
-    xwidth=2.0,
-    yheight=2.0,
+    filename="PSD_vb_exit.dat", 
+    xwidth=wvb, 
+    yheight=hvb,
     restore_neutron=1)
+AT (0, 0, length/2) RELATIVE PREVIOUS 
+
+COMPONENT TOF_radial_after = Monitor_nD(
+    xwidth = 2, yheight = 2,
+    restore_neutron=1, options = "list=all x y vx vy radius t",
+    filename = "TOF_radial_after.dat")
 AT (0, 0, 1E-9) RELATIVE PREVIOUS
 
-COMPONENT PSD_large_target_2 = PSD_monitor(
-    nx=128,
-    ny=128,
-    filename="PSD_large_target2.dat", 
-    xwidth=8.0, 
-    yheight=8.0,
-    restore_neutron=1)
-AT (0, 0, 1E-9) RELATIVE PREVIOUS
+/* end of venbla */
 
-COMPONENT TOF_radial_target_1 = Monitor_nD(
-    xwidth = 1, yheight = 1,
+COMPONENT TOF_target = Monitor_nD(
+    xwidth = 2, yheight = 2,
+    restore_neutron=1,
     options = "list=all x y radius t",
-    filename = "TOF_target_radial.dat")
-AT (0.0,0.0,1E-9) RELATIVE PREVIOUS
+    filename = "TOF_target.dat")
+AT (0.0,0.0,59.5) RELATIVE BPCS
 
-COMPONENT TOF_monitor_target = Monitor_nD(
-    xwidth = 0.5, yheight = 0.5,
-    options = "t limits=[0,5e-1] bins=100", filename = "TOF_monitor_target.dat")
+COMPONENT PSD_TOF = PSD_TOF_monitor(
+ nx = 100, ny = 80,
+ nt = 10, filename = "PSD_TOF.dat",
+ xmin = -2.5, xmax = 2.5,
+ ymin = -1.5, ymax = 1.5,
+ tmin = 0, tmax = 300000)
 AT (0.0,0.0,1E-9) RELATIVE PREVIOUS
 
 FINALLY 
