@@ -96,12 +96,6 @@ COMPONENT psd_vb_enter = PSD_monitor(
     restore_neutron=1)
 AT (0, yvb, 0.5*zvb-length) RELATIVE monolith_entrance
 
-COMPONENT TOF_radial_before = Monitor_nD(
-    xwidth = 2, yheight = 2,
-    restore_neutron=1, options = "list=all x y vx vy radius t",
-    filename = "TOF_radial_before.dat")
-AT (0, 0, 1E-9) RELATIVE PREVIOUS
-
 COMPONENT vb_y = Venbla(
     reflect="refl_data/refl_m6.dat",
     zvb=zvb,		// z distance from source to vb
@@ -141,12 +135,6 @@ COMPONENT psd_vb_exit = PSD_monitor(
     yheight=hvb,
     restore_neutron=1)
 AT (0, 0, 0.5*length) RELATIVE PREVIOUS 
-
-COMPONENT TOF_radial_after = Monitor_nD(
-    xwidth = 2, yheight = 2,
-    restore_neutron=1, options = "list=all x y vx vy radius t",
-    filename = "TOF_radial_after.dat")
-AT (0, 0, 1E-9) RELATIVE PREVIOUS
 
 /* end of venbla */
 
