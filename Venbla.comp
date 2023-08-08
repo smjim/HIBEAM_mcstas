@@ -160,7 +160,7 @@ INITIALIZE
 		double yrc;
 		if (j<i)
 			yrc = y_vals[j] - (thickness/2.)*cos(angles[j]);
-		if (i<=j)
+		if (i>=j)
 			yrc = y_vals[j] + (thickness/2.)*cos(angles[j]);
 
 		/* zvb != zrc because blades are rotated about center of blade, 

@@ -1,0 +1,125 @@
+/********************************************************************************
+* 
+* McStas, neutron ray-tracing package
+*         Copyright (C) 1997-2008, All rights reserved
+*         Risoe National Laboratory, Roskilde, Denmark
+*         Institut Laue Langevin, Grenoble, France
+* 
+* This file was written by McStasScript, which is a 
+* python based McStas instrument generator written by 
+* Mads Bertelsen in 2019 while employed at the 
+* European Spallation Source Data Management and 
+* Software Centre
+* 
+* Instrument hibeam
+* 
+* %Identification
+* Written by: Python McStas Instrument Generator
+* Date: 13:42:54 on agosto 07, 2023
+* Origin: ESS DMSC
+* %INSTRUMENT_SITE: Generated_instruments
+* 
+* 
+* %Parameters
+* 
+* %End 
+********************************************************************************/
+
+DEFINE INSTRUMENT hibeam (Venetian_Blinds_Position = 15					// Z distance from source to Venetian Blinds
+)
+
+DECLARE 
+%{
+%}
+
+USERVARS 
+%{
+double trackid_and_nscatter; // Neutron track ID (first 30 bits of MCPL userflag) and number of scattering events (last 2 bits of MCPL userflag)
+%}
+
+INITIALIZE 
+%{
+// Start of initialize for generated hibeam
+%}
+
+TRACE 
+COMPONENT progressbar = Progress_bar()
+AT (0,0,0) ABSOLUTE
+
+COMPONENT Source = ESS_butterfly(
+ sector = "E", beamline = 6,
+ cold_frac = 0.7, dist = 1.89074,
+ focus_xw = 0.113, focus_yh = 0.124,
+ Lmin = 0.1, Lmax = 20,
+ n_pulses = 1, acc_power = 5)
+AT (0,0,0) ABSOLUTE
+EXTEND %{
+trackid_and_nscatter=(double)mcget_run_num();
+%}
+
+COMPONENT BPCS = Arm()
+AT (0.0,0.0,5.390744651928291) RELATIVE Source
+
+COMPONENT nboa_engineering_constraints = Shape(
+ geometry = "nboa_engineering_constraints.off")
+AT (0.0,-0.055,-1.757) RELATIVE BPCS
+
+COMPONENT L_monitor_entry = L_monitor(
+ nL = 500, xmin = -0.0565,
+ xmax = 0.0565, ymin = -0.062,
+ ymax = 0.025, Lmin = 0.1,
+ Lmax = 20)
+AT (0.0,0,-3.497) RELATIVE BPCS
+
+COMPONENT slit = Slit(
+ xmin = -0.0564588, xmax = 0.0564588,
+ ymin = -0.0619548, ymax = 0.0216618)
+AT (0.0,0,-3.497) RELATIVE BPCS
+
+COMPONENT asym_monolith_guide = Guide_anyshape(
+ m = 4, geometry = "monolith_guide.off")
+AT (0,0,32.0) RELATIVE BPCS
+EXTEND %{
+if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
+%}
+
+COMPONENT PSD_monitor_exit_guide = PSD_monitor(
+ xmin = -0.097, xmax = 0.097,
+ ymin = -0.145, ymax = 0.035)
+AT (0.0,0.0,-0.017) RELATIVE BPCS
+
+COMPONENT bunker_wall = Shape(
+ radius = 15, yheight = 2,
+ thickness = 3.5)
+AT (-0.004412486121389605,0.0,-0.10935734985006093) ABSOLUTE
+
+COMPONENT HIBEAM_Venbla_Coordinate_System = Arm()
+ AT (0.0,0.0,Venetian_Blinds_Position-5.5) RELATIVE BPCS
+
+COMPONENT V_Reflecting_Venbla = Guide_anyshape(
+ m=4,
+ geometry="Venbla_geometry.off")
+AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System 
+
+COMPONENT PSD_TOF_0 = PSD_TOF_monitor(
+ nx = 100, ny = 80,
+ nt = 100, filename = "PSD_TOF.dat",
+ xmin = -2.5, xmax = 2.5,
+ ymin = -0.4, ymax = 0.4,
+ tmin = 0, tmax = 328612)
+AT (0.0,0.0,59.5) RELATIVE BPCS
+
+COMPONENT PSD_TOF = PSD_TOF_monitor(
+ nx = 100, ny = 80,
+ nt = 100, filename = "PSD_TOF.dat",
+ xmin = -2.5, xmax = 2.5,
+ ymin = -1.5, ymax = 1.5,
+ tmin = 0, tmax = 328612)
+AT (0.0,0.0,59.5) RELATIVE BPCS
+
+FINALLY 
+%{
+// Start of finally for generated hibeam
+%}
+
+END
