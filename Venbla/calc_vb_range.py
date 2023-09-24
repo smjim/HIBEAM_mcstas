@@ -33,6 +33,8 @@ def plot_intersections(z_value):
 	plt.plot(*top_corner_target, 'ms', label='Top Corner Target')
 	plt.plot(*bot_corner_target, 'cs', label='Bot Corner Target')
 
+	plt.vlines(x=z_value, ymin=-1.0, ymax=1.0, label=f'zvb={z_value}')
+
 	for eq in equations:
 		x_vals = np.linspace(0, 70, 100)
 		y_vals = eq[0] * x_vals + eq[1]
@@ -50,6 +52,13 @@ def plot_intersections(z_value):
 	plt.show()
 
 if __name__ == "__main__":
+	import argparse
+
+	parser = argparse.ArgumentParser(description="Find Venbla Optimal Geometry")
+	parser.add_argument("zvb", type=float, help="Z displacement of venetian blinds from source")
+	args = parser.parse_args()
+	zvb = args.zvb
+
 	# Calculate equations for the specified lines
 	lines = [
 		(top_source, bot_corner_ellipse),
@@ -62,10 +71,4 @@ if __name__ == "__main__":
 
 	equations = [calculate_line_equation(p1, p2) for p1, p2 in lines]
 
-	# Prompt user for z value
-	z_value = float(input("Enter a z value between 5.374 and 65: "))
-	if 5.374 <= z_value <= 65:
-		plot_intersections(z_value)
-	else:
-		print("Invalid z value. Please enter a value between 5.374 and 65.")
-
+	print(plot_intersections(zvb))

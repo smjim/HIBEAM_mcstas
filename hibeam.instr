@@ -25,7 +25,7 @@
 * %End 
 ********************************************************************************/
 
-DEFINE INSTRUMENT hibeam (Venetian_Blinds_Position = 15					// Z distance from source to Venetian Blinds
+DEFINE INSTRUMENT hibeam (	Venetian_Blinds_Position = 15					// Z distance from source to Venetian Blinds
 )
 
 DECLARE 
@@ -51,11 +51,23 @@ COMPONENT Source = ESS_butterfly(
  cold_frac = 0.7, dist = 1.89074,
  focus_xw = 0.113, focus_yh = 0.124,
  Lmin = 0.1, Lmax = 20,
- n_pulses = 1, acc_power = 5)
+ n_pulses = 1, acc_power = 2)
 AT (0,0,0) ABSOLUTE
 EXTEND %{
 trackid_and_nscatter=(double)mcget_run_num();
 %}
+
+COMPONENT mcpl_output_source = MCPL_output(
+    filename="source_output.mcpl")
+AT (0.0,0.0,0.01) RELATIVE Source
+
+COMPONENT psd_monitor_source = PSD_monitor(
+    nx=100, 
+    ny=100, 
+    filename="source_image.dat", 
+    xwidth=1.0, 
+    yheight=1.0)
+AT (0, 0, 0.01) RELATIVE Source 
 
 COMPONENT BPCS = Arm()
 AT (0.0,0.0,5.390744651928291) RELATIVE Source
@@ -83,6 +95,10 @@ EXTEND %{
 if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
 %}
 
+COMPONENT mcpl_output = MCPL_output(
+    filename="exit_monolith_guide.mcpl")
+AT (0.0,0.0,5.390744651928291) RELATIVE Source
+
 COMPONENT PSD_monitor_exit_guide = PSD_monitor(
  xmin = -0.097, xmax = 0.097,
  ymin = -0.145, ymax = 0.035)
@@ -98,24 +114,31 @@ COMPONENT HIBEAM_Venbla_Coordinate_System = Arm()
 
 COMPONENT V_Reflecting_Venbla = Guide_anyshape(
  m=4,
- geometry="Venbla_geometry.off")
+ geometry="Venbla_vertical_geometry.off")
 AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System 
 
-COMPONENT PSD_TOF_0 = PSD_TOF_monitor(
- nx = 100, ny = 80,
- nt = 100, filename = "PSD_TOF.dat",
- xmin = -2.5, xmax = 2.5,
- ymin = -0.4, ymax = 0.4,
- tmin = 0, tmax = 328612)
-AT (0.0,0.0,59.5) RELATIVE BPCS
+COMPONENT H_Reflecting_Venbla = Guide_anyshape(
+ m=4,
+ geometry="Venbla_horizontal_geometry.off")
+AT (0.0,0.0,0.31) RELATIVE PREVIOUS 
+ROTATED (0.0, 0.0, 90) RELATIVE PREVIOUS
 
 COMPONENT PSD_TOF = PSD_TOF_monitor(
  nx = 100, ny = 80,
- nt = 100, filename = "PSD_TOF.dat",
+ nt = 10, filename = "PSD_TOF.dat",
  xmin = -2.5, xmax = 2.5,
  ymin = -1.5, ymax = 1.5,
  tmin = 0, tmax = 328612)
 AT (0.0,0.0,59.5) RELATIVE BPCS
+
+COMPONENT psd_monitor = PSD_monitor(
+    nx=100, 
+    ny=100, 
+    filename="target_image.dat", 
+    xwidth=1.0, 
+    yheight=1.0)
+AT (0, 0, 59.5) RELATIVE BPCS 
+
 
 FINALLY 
 %{

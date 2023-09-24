@@ -30,11 +30,16 @@ def generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet):
 		yrctmp = yrc + 1	# yrctmp is previous yrc, used to determine when to end loop. Define initial as arbitrarily greater
 		ysrc = 0			# placeholder for y pos of source
 
-		while (0.000001 < abs(yrctmp - yrc)):
+		j=0
+		max_iter = 10
+		while ((0.000001 < abs(yrctmp - yrc)) and (j < max_iter)):
+			j+=1
 			yrctmp = yrc
 
 			delta = 0.5 * (math.atan(zdet / yrc) - math.atan(zvb / (yrc - ysrc)))
 			yrc = y0 + math.tan(delta) * (length / 2.)
+		if j == max_iter:
+			print("exceeded max iteration count!")
 
 		angles[i] = math.atan((yrc - y0) / (length / 2.))
 		y_vals[i] = yrc + (thickness / 2.) * math.cos(angles[i])  # y_vals stores center of blade, not center of reflective surface
@@ -74,7 +79,7 @@ def generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet):
 
 # Functions for writing geometry to OFF file
 def rotate_vertex(vertex, rotation_angles):
-	a = math.radians(rotation_angles[0])
+	a = rotation_angles[0] #math.radians(rotation_angles[0])
 	cos_a = math.cos(a)
 	sin_a = math.sin(a)
 
@@ -115,7 +120,7 @@ def generate_rectangular_prism(x_extent, y_extent, z_extent, ypos, zpos, a):
 	]
 
 	# Rotate and translate the rectangular prism vertices
-	rotated_vertices = [rotate_vertex(vertex, [a, 0.0, 0.0]) for vertex in vertices]
+	rotated_vertices = [rotate_vertex(vertex, [-a, 0.0, 0.0]) for vertex in vertices]
 	translated_vertices = [[vertex[0], vertex[1] + ypos, vertex[2] + zpos] for vertex in rotated_vertices]
 
 	# Rectangular prism faces (vertices are 0-indexed)
@@ -148,26 +153,62 @@ def write_off(rectangular_prisms, filename):
 	write_rectangular_prism(all_vertices, all_faces, filename)
 
 if __name__ == "__main__":
-	# Initialize parameters for creation of blades
-	length = 1.0		# Z length of blades
-	thickness = 0.0003	# Thickness of blades
-	wvb = 0.7			# X width of blade array
-	zvb = 15.0			# Z distance between source and center of vb
-	zdet = 65.0 - 15.0	# Z didstance between center of vb and target
-	hvb = 0.5			# Y height of vb
-	hdet = 0.8			# Y height of detector
-	ydet = 0.0			# Y dispalcement of detector
+	## Initialize parameters for creation of blades
+	#length = 0.25		# Z length of blades
+	#thickness = 0.0003	# Thickness of blades
+	#wvb = 0.7			# X width of blade array
+	#zvb = 15.0			# Z distance between source and center of vb
+	#zdet = 65.0 - 15.0	# Z didstance between center of vb and target
+	#hvb = 0.5			# Y height of vb
+	#hdet = 0.8			# Y height of detector
+	#ydet = 0.0			# Y dispalcement of detector
+
+	## define the ranges for y coordinates
+	#range1 = (-0.30637397464578675, -0.14843189212759536)
+	#range2 = (0.093925468755241, 0.12472781506338554)
+	
+
+	import argparse
+
+	parser = argparse.ArgumentParser(description="Create Venetian Blinds geometry with given parameters")
+
+	parser.add_argument("length", type=float, help="Z length of blades")
+	parser.add_argument("thickness", type=float, help="Thickness of blades")
+	parser.add_argument("wvb", type=float, help="X width of blade array")
+	parser.add_argument("zvb", type=float, help="Z distance between source and center of vb")
+	parser.add_argument("zdet", type=float, help="Z distance between center of vb and target")
+	parser.add_argument("hvb", type=float, help="Y height of vb")
+	parser.add_argument("hdet", type=float, help="Y height of detector")
+	parser.add_argument("ydet", type=float, help="Y displacement of detector")
+	parser.add_argument("min1", type=float, help="beginning of range 1")
+	parser.add_argument("max1", type=float, help="ending of range 1")
+	parser.add_argument("min2", type=float, help="beginning of range 2")
+	parser.add_argument("max2", type=float, help="ending of range 2")
+
+	args = parser.parse_args()
+
+	length = args.length
+	thickness = args.thickness
+	wvb = args.wvb
+	zvb = args.zvb
+	zdet = args.zdet
+	hvb = args.hvb
+	hdet = args.hdet
+	ydet = args.ydet
+	min1 = args.min1
+	max1 = args.max1
+	min2 = args.min2
+	max2 = args.max2
+
+	range1 = (min1, max1)
+	range2 = (min2, max2)
 
 	# Create the blade geometry:
 	y_vals, angles = generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet) 
 
 	# Apply restrictions to blade geometry:
 
-	# select only blades within the two ranges defined below:
-	# define the ranges for y coordinates
-	range1 = (-0.30637397464578675, -0.14843189212759536)
-	range2 = (0.093925468755241, 0.12472781506338554)
-	
+	# select only blades within the two ranges
 	# create boolean masks for the two ranges
 	mask1 = np.logical_and(y_vals >= range1[0], y_vals <= range1[1])
 	mask2 = np.logical_and(y_vals >= range2[0], y_vals <= range2[1])
@@ -189,5 +230,6 @@ if __name__ == "__main__":
 	
 	print(y_vals)
 	print(angles)
+	print(f'number of blades: {y_vals.size}')
 	filename = "Venbla_geometry.off"
 	write_off(blades, filename)
