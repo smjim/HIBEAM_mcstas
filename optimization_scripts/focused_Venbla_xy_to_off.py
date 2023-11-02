@@ -27,6 +27,7 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	output_dir = args.output_dir
+	image_dir = output_dir
 
 	VB_length = args.VB_length
 	VB_thickness = args.VB_thickness
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 	outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=False)
 	vertical_image_data = output_to_image_data("{}/v_reflecting_VB_pos_image_midpoint.dat".format(outDir)) 
 	horizontal_image_data = output_to_image_data("{}/h_reflecting_VB_pos_image_midpoint.dat".format(outDir)) 
-	target_image_no_vb_data = output_to_image_data("{}/psd.dat".format(outDir)) 
+	target_image_no_vb_data = output_to_image_data("{}/psdt2_large.dat".format(outDir)) 
 
 	# --------------------------------
 	# Step 2: Find x and y bounds from simulation output
@@ -84,7 +85,7 @@ if __name__ == "__main__":
 	# Sanity check on target
 	back_target = run_backprop(outDir, 65-0.001)
 	target_image_data = output_to_image_data(back_target)
-	plot_results(target_image_data, plot_type='full')
+	plot_results(target_image_data, plot_type='full', save_image=f'{image_dir}1_filtered_target_image.pdf')
 
 	# Sanity check on bounds found
 	print('vertical_image (vx0, vx3, vy0, vy3)')
@@ -99,8 +100,8 @@ if __name__ == "__main__":
 	vy = np.array([vy0, vy1, vy2, vy3])
 	hx = np.array([hx0, hx1, hx2, hx3])
 	hy = np.array([hy0, hy1, hy2, hy3])
-	plot_results(vertical_image_data, backprop_vertical_image_data, plot_type='y', xlims=vx, ylims=vy)
-	plot_results(horizontal_image_data, backprop_horizontal_image_data, plot_type='x', xlims=hx, ylims=hy)
+	plot_results(vertical_image_data, backprop_vertical_image_data, plot_type='y', xlims=vx, ylims=vy, save_image=f'{image_dir}2_vr_vb_yproj.pdf')
+	plot_results(horizontal_image_data, backprop_horizontal_image_data, plot_type='x', xlims=hx, ylims=hy, save_image=f'{image_dir}3_hr_vb_xproj.pdf')
 
 
 	# --------------------------------
@@ -133,5 +134,5 @@ if __name__ == "__main__":
 	#plot_results(target_image_no_vb_data, target_image_data, plot_type='full')
 	#plot_results(target_image_no_vb_data, plot_type='full')
 	#plot_results(target_image_data, plot_type='full')
-	count_results(target_image_no_vb_data, circle=[-30, -10, 20])
-	count_results(target_image_data, circle=[-30, -10, 20])
+	count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}4_target_no_vb.pdf')
+	count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}5_target_with_vb.pdf')

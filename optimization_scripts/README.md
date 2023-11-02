@@ -1,4 +1,12 @@
 ## How to run venetian blinds generator
+1. Determine input codes and constant variables and input into simulation manually
+2. Determine input variables and run code with those as arguments:
+example:
+`python3 optimization_scripts/focused_Venbla_xy_to_off.py 10 0.5 0.0005 4 55 [outDir] --detpos -0.3 -0.1`
+3. Run plotter to show all plot files in the output directory
+example: 
+`python3 optimization_scripts/display_pdf.py [outDir] [output].pdf`
+
 ```
 usage: focused_Venbla_xy_to_off.py [-h] [--detdim detwidth detheight] [--detpos detx dety] VB_z VB_length VB_thickness VB_m det_z output_dir
 
@@ -19,5 +27,3 @@ options:
   --detpos detx dety    displacement of detector position
 ```
 
-example:
-`python3 optimization_scripts/focused_Venbla_xy_to_off.py 10 0.5 0.0005 4 55 ~/jroger87Ext/HIBEAM/gen_blades/ --detpos -0.3 -0.1`

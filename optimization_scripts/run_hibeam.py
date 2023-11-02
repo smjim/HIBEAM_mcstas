@@ -23,8 +23,8 @@ def generate_hash(*parameters):
 # run simulation with params
 def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB):
 	instr = "target40cm_off.instr"
-	instr_no_vb = "target40cm_off_novb.instr"
-	mpi = 12
+	instr_no_vb = "target40cm_off_no_vb.instr"
+	mpi = 1
 
 	det_x, det_y = det_pos
 	v_reflecting_VB_geometry, h_reflecting_VB_geometry = VB_filenames
@@ -58,7 +58,8 @@ def run_backprop(dirName, zvb):
 	outFile = "{}/histogram_{}.dat".format(dirName, zvb)  
 
 	# Generate mcpl text file from filtered target image for backpropagation
-	mcpltool_command = "mcpltool -t {}/target_output.mcpl {}/target_output.dat".format(dirName, dirName)
+	mcpltool_command = "mcpltool -t {}/target_output.mcpl.gz {}/target_output.dat".format(dirName, dirName)
+	#mcpltool_command = "mcpltool -t {}/target_output.mcpl {}/target_output.dat".format(dirName, dirName)
 	print(colors.YELLOW + "\nrunning command:\n{}".format(mcpltool_command) + colors.ENDC + '\n')
 	os.system(mcpltool_command)
 
@@ -79,7 +80,6 @@ def optimal_source_positions(zvb, vy, hx):
 
 	# Convert .mcpl to .txt
 	# TODO change target_output.mcpl to vb_output for whatever vb you have 
-	print('hi')
 	mcpltool_command = "mcpltool -t {}/target_output.mcpl {}/target_output.dat".format(dirName, dirName)
 	print(colors.YELLOW + "\nrunning command:\n{}".format(mcpltool_command) + colors.ENDC + '\n')
 	os.system(mcpltool_command)

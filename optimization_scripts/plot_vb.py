@@ -9,7 +9,7 @@ def show_instr():
 	#os.system('mcdisplay-webgl target40cm_off.instr')
 
 # Plot any number of distributions on 1d projection
-def plot_results(*image_data_list, plot_type='full', xlims=None, ylims=None):
+def plot_results(*image_data_list, plot_type='full', save_image=None, xlims=None, ylims=None):
 	ax = None
 
 	for image_data in image_data_list:
@@ -74,6 +74,7 @@ def plot_results(*image_data_list, plot_type='full', xlims=None, ylims=None):
 			plt.ylabel(dataHeader['ylabel'])
 			plt.title(title, pad=10)
 			plt.tight_layout()
+			plt.savefig(save_image, format='pdf')
 			plt.show()
 			return
 
@@ -81,9 +82,10 @@ def plot_results(*image_data_list, plot_type='full', xlims=None, ylims=None):
 			print("Invalid plot type. Please specify 'x', 'y', or 'full'.")
 
 	plt.tight_layout()
+	plt.savefig(save_image, format='pdf')
 	plt.show()
 
-def count_results(image_data, square=None, circle=None, noShow=False):
+def count_results(image_data, square=None, circle=None, noShow=False, save_image=None):
 	dataHeader, extent, image, imageErr = image_data
 
 	dx = (extent[1] - extent[0]) / (image.shape[1] - 1)
@@ -128,4 +130,10 @@ def count_results(image_data, square=None, circle=None, noShow=False):
 			circle = Circle((x0, y0), radius, fill=False, color='red', linewidth=2)
 			ax.add_patch(circle)
 
+		# Display ROI sum and error as text on the plot
+		roi_label = f"ROI Sum: {roi_sum:.2e} ± {sum_err:.2e}\nROI Area: {roi_area:.2e} [{unit1[0]}*{unit2[0]}]"
+		ax.text(0.05, 0.95, roi_label, transform=ax.transAxes, fontsize=12, va='top', ha='left', backgroundcolor='white')
+
+		plt.tight_layout()
+		plt.savefig(save_image, format='pdf')
 		plt.show()
