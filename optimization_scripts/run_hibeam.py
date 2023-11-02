@@ -63,7 +63,7 @@ def run_backprop(dirName, zvb):
 	os.system(mcpltool_command)
 
 	# Run back_propagate.cpp with given zvb
-	backprop_command = "./focused_blades/back_propagate {} {}/target_output.dat {}".format(zvb, dirName, outFile)
+	backprop_command = "./optimization_scripts/back_propagate {} {}/target_output.dat {}".format(zvb, dirName, outFile)
 	print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
 	os.system(backprop_command)
 
@@ -86,7 +86,7 @@ def optimal_source_positions(zvb, vy, hx):
 
 	# For each blade position, backpropagate only neutrons at that position 
 	for y in vy: #TODO run this for each vy and hx  
-		backprop_command = "./focused_blades/back_propagate {} {}/target_output.dat {}".format(zvb, dirName, outFile)
+		backprop_command = "./optimization_scripts/back_propagate {} {}/target_output.dat {}".format(zvb, dirName, outFile)
 		#TODO make cpp backpropagate code that only backpropagates from a given x/ y position
 		print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
 		os.system(backprop_command)

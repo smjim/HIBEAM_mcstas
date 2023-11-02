@@ -104,7 +104,9 @@ double TargetDisplacement_v_displacement = 0,
 double TargetDisplacement_horizontal = 1, 
 double VB_pos=15,
 double VB_length=0.3,
-double VB_m=4
+double VB_m=4,
+string V_r_VB_filename="Venbla_vertically_reflecting_geometry.off",
+string H_r_VB_filename="Venbla_horizontally_reflecting_geometry.off"
 )
 
 DECLARE 
@@ -205,7 +207,7 @@ AT (0, 0, -0.5*VB_length) RELATIVE HIBEAM_Venbla_Coordinate_System
 // Vertically Reflecting Venetian Blinds
 COMPONENT V_Reflecting_Venbla = Guide_anyshape(
  m=VB_m,
- geometry="Venbla_vertically_reflecting_geometry.off")
+ geometry=V_r_VB_filename)
 AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System
 EXTEND %{
 if (SCATTERED) {t = 0.0; };
@@ -237,7 +239,7 @@ AT (0, 0, (0.5*VB_length)+0.005) RELATIVE HIBEAM_Venbla_Coordinate_System
 // Horizontally Reflecting Venetian Blinds
 COMPONENT H_Reflecting_Venbla = Guide_anyshape(
  m=VB_m,
- geometry="Venbla_horizontally_reflecting_geometry.off")
+ geometry=H_r_VB_filename)
 AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
 ROTATED (0.0, 0.0, 90) RELATIVE HIBEAM_Venbla_Coordinate_System
 EXTEND %{
