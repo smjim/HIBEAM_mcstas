@@ -1,8 +1,17 @@
 import math
 import numpy as np
 
+class colors:
+    RED = '\033[31m'
+    ENDC = '\033[m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+
 # Define geometry
 def generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet):
+	print(colors.BLUE + f'VB parameters:\nVB_pos={zvb}, zdet={zdet}, det_pos=(0, {ydet}), VB_length={length}, VB_thickness={thickness}, vy=-, hx=-' + colors.ENDC)
+
 	y_vals = np.zeros(10000) 
 	angles = np.zeros(10000) 
 
@@ -71,7 +80,7 @@ def generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet):
 
 	if y_vals[i] > y_vals[i - 1] - thickness:
 		print("ERROR: blade overlap! max overlap @center=", y_vals[i] - (y_vals[i - 1] - thickness))
-	if numBlades > 999:
+	if numBlades > 9999:
 		print("ERROR: numBlades greater than blade limit!")
 	
 	# remove trailing zeros from y_vals, angles
@@ -106,7 +115,7 @@ def write_rectangular_prism(vertices, faces, filename):
 		for face in faces:
 			file.write(f"{len(face)} {' '.join(map(str, face))}\n")
 
-def generate_rectangular_prism(x_extent, y_extent, z_extent, ypos, zpos, a):
+def generate_rectangular_prism(x_extent, y_extent, z_extent, xpos, ypos, zpos, a):
 	# Rectangular prism vertices
 	vertices = [
 		[-x_extent / 2, -y_extent / 2, -z_extent / 2],  # Vertex 0
@@ -121,7 +130,7 @@ def generate_rectangular_prism(x_extent, y_extent, z_extent, ypos, zpos, a):
 
 	# Rotate and translate the rectangular prism vertices
 	rotated_vertices = [rotate_vertex(vertex, [-a, 0.0, 0.0]) for vertex in vertices]
-	translated_vertices = [[vertex[0], vertex[1] + ypos, vertex[2] + zpos] for vertex in rotated_vertices]
+	translated_vertices = [[vertex[0] + xpos, vertex[1] + ypos, vertex[2] + zpos] for vertex in rotated_vertices]
 
 	# Rectangular prism faces (vertices are 0-indexed)
 	faces = [
@@ -140,8 +149,8 @@ def write_off(rectangular_prisms, filename):
 	all_faces = []
 
 	for prism_info in rectangular_prisms:
-		x_extent, y_extent, z_extent, ypos, zpos, a = prism_info
-		vertices, faces = generate_rectangular_prism(x_extent, y_extent, z_extent, ypos, zpos, a)
+		x_extent, y_extent, z_extent, xpos, ypos, zpos, a = prism_info
+		vertices, faces = generate_rectangular_prism(x_extent, y_extent, z_extent, xpos, ypos, zpos, a)
 		num_vertices = len(all_vertices)
 
 		# Add current prism vertices to the combined list
@@ -209,9 +218,12 @@ if __name__ == "__main__":
 	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
 	v_blades = []
 	
+	wvb = x_bounds[3] - x_bounds[0]
+	x_center = -0.5*(x_bounds[3] + x_bounds[0])
+	print(f'wvb: {wvb}, x_center: {x_center}')
 	for i in range(len(y_vals_v)):
 		# Append each combination of parameters to v_blades list
-		v_blades.append((wvb, thickness, length, y_vals_v[i], 0.0, angles_v[i])) # zvb := 0.0 in relation to center of component
+		v_blades.append((wvb, thickness, length, x_center, y_vals_v[i], 0.0, angles_v[i])) # zvb := 0.0 in relation to center of component
 	
 	print(y_vals_v)
 	print(angles_v)
@@ -221,7 +233,11 @@ if __name__ == "__main__":
 
 	# --------------------------------
 	# Create horizontally reflecting blade geometry
-	x_vals_h, angles_h = generate_venbla(length, thickness, zvb+(length+0.01), zdet-(length+0.01), 100, 0.01, xdet)
+	x_vals_h, angles_h = generate_venbla(length, thickness, zvb, zdet, 100, 0.01, xdet)
+	#x_vals_h, angles_h = generate_venbla(length, thickness, zvb+(length+0.01), zdet-(length+0.01), 100, 0.01, xdet)
+	print(zvb+(length+0.01), zdet-(length+0.01))
+	#x_vals_h, angles_h = generate_venbla(length, thickness, 15.31, (65-15.31), 100, 0.01, xdet)
+	#x_vals_h, angles_h = generate_venbla(length, thickness, zvb+(length+0.01), zdet-(length+0.01), 100, 0.01, xdet)
 	#x_vals_h, angles_h = generate_venbla(length, thickness, zvb+(length+0.01), zdet-(length+0.01), wvb, wdet, xdet)
 
 	# Apply restrictions to blade geometry:
@@ -237,9 +253,13 @@ if __name__ == "__main__":
 	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
 	h_blades = []
 	
+	hvb = y_bounds[3] - y_bounds[0]
+	y_center = 0.5*(y_bounds[3] + y_bounds[0])
+	print(f'hvb: {hvb}, y_center: {y_center}')
 	for i in range(len(x_vals_h)):
 		# Append each combination of parameters to h_blades list
-		h_blades.append((hvb, thickness, length, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
+		h_blades.append((hvb, thickness, length, y_center, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
+		#h_blades.append((hvb, thickness, length, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
 	
 	print(x_vals_h)
 	print(angles_h)

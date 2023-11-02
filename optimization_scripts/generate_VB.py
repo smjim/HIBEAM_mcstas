@@ -2,8 +2,17 @@
 import math
 import numpy as np
 
+class colors: 
+    RED = '\033[31m'
+    ENDC = '\033[m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+
 # VB blades with pointlike source
 def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
+	print(colors.BLUE + f'VB parameters:\nVB_pos={zvb}, zdet={zdet}, det_pos={det_pos}, VB_length={length}, VB_thickness={thickness}, vy={vy}, hx={hx}' + colors.ENDC)
+
 	vy0, vy1, vy2, vy3 = 0.01*vy
 	hx0, hx1, hx2, hx3 = 0.01*hx
 	xdet, ydet = det_pos

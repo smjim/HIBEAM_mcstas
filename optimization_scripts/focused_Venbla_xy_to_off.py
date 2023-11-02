@@ -118,9 +118,8 @@ if __name__ == "__main__":
 
 	# Step 3.b: Generate Venetian Blinds *assuming linear interpolation of optimal focus point 
 	# returns filenames v_reflecting_venbla_geometry, h_reflecting_venbla_geometry
-	#VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
-	VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
-	print(f'VB parameters:\nVB_pos={VB_pos}, zdet={zdet}, det_pos={det_pos}, VB_length={VB_length}, VB_thickness={VB_thickness}, vy={vy}, hx={hx}')
+	VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
+	#VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
 	#VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx, vyz0, hxz0) # Venetian Blinds with each blade individually focused
 
 	# --------------------------------
@@ -139,5 +138,8 @@ if __name__ == "__main__":
 	#plot_results(target_image_no_vb_data, target_image_data, plot_type='full')
 	#plot_results(target_image_no_vb_data, plot_type='full')
 	#plot_results(target_image_data, plot_type='full')
-	count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}4_target_no_vb.pdf', noShow=noShow)
-	count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}5_target_with_vb.pdf', noShow=noShow)
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}4_target_no_vb.pdf', noShow=noShow)
+	vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}5_target_with_vb.pdf', noShow=noShow)
+	ratio = vb_sum/no_vb_sum
+	ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
+	print(f'Estimated improvement: {ratio} ± {ratio_err}')

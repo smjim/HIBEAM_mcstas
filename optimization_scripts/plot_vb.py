@@ -150,3 +150,5 @@ def count_results(image_data, square=None, circle=None, noShow=False, save_image
 
 	if not noShow:
 		plt.show()
+	
+	return roi_sum, sum_err
