@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 		std::cerr << "Usage: " << argv[0] << " <zvb> <inFile> <outFile>" << std::endl;
 		return 1;
 	}   
-	double zvb = std::stoi(argv[1]);
+	double zvb = std::stod(argv[1]);
 	if (zvb <= 0) {
 		std::cerr << "Error: zvb must be positive." << std::endl;
 		return 1;
@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
 
 	const double binSize = 0.01;		// bin Size [m]
 	const double zvals[] = {zvb};		// z values for which histogram is recorded [m]
+		
+	std::cout << zvals[0] << std::endl;
 
 	// bounds on histogram plane in x-y [m]
 	double xwidth = 1.00;
@@ -55,6 +57,8 @@ int main(int argc, char** argv) {
 			std::cerr << "Error opening input file!" << std::endl;
 			return 1;
 		}
+
+		std::cout << zpos << std::endl;
 
 		NeutronData data;
 		std::string line;

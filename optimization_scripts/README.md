@@ -2,7 +2,7 @@
 1. Determine input codes and constant variables and input into simulation manually
 2. Determine input variables and run code with those as arguments:
 example:
-`python3 optimization_scripts/focused_Venbla_xy_to_off.py 10 0.5 0.0005 4 55 [outDir] --detpos -0.3 -0.1`
+`python3 optimization_scripts/focused_Venbla_xy_to_off.py 10 0.5 0.0005 4 55 tmp/ --detpos -0.3 -0.1 --noShow`
 3. Run plotter to show all plot files in the output directory
 example: 
 `python3 optimization_scripts/display_pdf.py [outDir] [output].pdf`
