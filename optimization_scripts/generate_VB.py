@@ -25,7 +25,7 @@ def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
 	x_center = -0.5*(hx3 + hx0)
 
 	# Create vertically reflecting blade geometry
-	y_vals_v, angles_v = generate_venbla(length, thickness, zvb, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
+	y_vals_v, angles_v = generate_vb_array(length, thickness, zvb, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
 
 	# Apply restrictions to blade geometry:
 	mask1_v = np.logical_and(y_vals_v >= vy0, y_vals_v <= vy1)
@@ -53,7 +53,7 @@ def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
 
 	# --------------------------------
 	# Create horizontally reflecting blade geometry
-	x_vals_h, angles_h = generate_venbla(length, thickness, zvb, zdet, 100, 0.01, xdet) # wvb = 100, wdet = 0.01
+	x_vals_h, angles_h = generate_vb_array(length, thickness, zvb, zdet, 100, 0.01, xdet) # wvb = 100, wdet = 0.01
 
 	# Apply restrictions to blade geometry:
 	mask1_h = np.logical_and(x_vals_h >= hx0, x_vals_h <= hx1)
@@ -84,12 +84,27 @@ def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
 
 # VB blades individually focused 
 def generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx, vyz0, hxz0):
-	print('this')
+	print(colors.BLUE + f'VB parameters:\nVB_pos={VB_pos}, zdet={zdet}, det_pos={det_pos}, VB_length={VB_length}, VB_thickness={VB_thickness}, vy={vy}, hx={hx}, vyz0={vyz0}, hxz0={hxz0}' + colors.ENDC)
+
+	vy0, vy1, vy2, vy3 = 0.01*vy
+	hx0, hx1, hx2, hx3 = 0.01*hx
+	xdet, ydet = det_pos
+	ydet *= 0.01
+	xdet *= 0.01
+
+	hvb = vy3-vy0
+	wvb = hx3-hx0
+	y_center = 0.5*(vy3 + vy0)
+	x_center = -0.5*(hx3 + hx0)
+
+	#TODO some pseudocode here!
+	# 1. 
+
 	return v_reflecting_venbla_geometry, h_reflecting_venbla_geometry 
 
 # VB focused to y=0
 # assumed ysrc = 0
-def generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet):
+def generate_vb_array(length, thickness, zvb, zdet, hvb, hdet, ydet):
 	y_vals = np.zeros(10000) 
 	angles = np.zeros(10000) 
 

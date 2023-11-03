@@ -76,76 +76,7 @@ def run_backprop(dirName, zvb):
 
 # Backpropagate from blade position and return optimal source position for that point
 def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noShow):
-	# For given blade, find optimal source position
-	def blade_optimal_pos(pos, direction): # written with vertical convention
-		if direction == 'vertical':
-			y = pos
-
-			# Find y extent for blade selection
-			ymin = (zvb * y)/ (zvb + length/2) 
-			ymax = (zvb * y)/ (zvb - length/2) 
-			if ymax < ymin: # make sure ymin < ymax
-				tmp = ymax
-				ymax = ymin
-				ymin = tmp
-	
-			# Generate image of what is being backpropagated
-			v_r_VB_blade_file = f'{outDir}/v_r_VB_histogram_{y}_{zvb-0.001}.dat'
-			os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/v_r_VB_output.dat {v_r_VB_blade_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}")
-			# Plot what is being backpropagated
-			v_r_VB_blade_image_data = output_to_image_data(v_r_VB_blade_file)
-			plot_results(v_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}05_v_r_VB_blade_{i}_image.pdf', noShow=noShow)
-	
-			# Backpropagate from selected blade
-			v_r_VB_back_file = f'{outDir}/v_r_VB_histogram_{y}_0.dat'
-			backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/v_r_VB_output.dat {v_r_VB_back_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}"
-			print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
-			os.system(backprop_command)
-			# Plot result of backpropagation
-			v_r_VB_back_image_data = output_to_image_data(v_r_VB_back_file)
-			plot_results(v_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}06_v_r_VB_back_{i}_image.pdf', noShow=noShow)
-			plot_results(v_r_VB_back_image_data, plot_type='y', save_image=f'{imageDir}07_v_r_VB_back_y_{i}_image.pdf', noShow=noShow)
-	
-			# Find peak of backpropagated distribution, store in vyz0
-			ysrc = find_image_peak(v_r_VB_back_image_data, 'y')
-	
-			return ysrc
-		elif direction == 'horizontal':
-			x = pos
-
-			# Find y extent for blade selection
-			xmin = (zvb * x)/ (zvb + length/2) 
-			xmax = (zvb * x)/ (zvb - length/2) 
-			if xmax < xmin: # make sure xmin < xmax
-				tmp = xmax
-				xmax = xmin
-				xmin = tmp
-	
-			# Generate image of what is being backpropagated
-			h_r_VB_blade_file = f'{outDir}/h_r_VB_histogram_{x}_{zvb-0.001}.dat'
-			os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {h_r_VB_blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
-			# Plot what is being backpropagated
-			h_r_VB_blade_image_data = output_to_image_data(h_r_VB_blade_file)
-			plot_results(h_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}08_h_r_VB_blade_{i}_image.pdf', noShow=noShow)
-	
-			# Backpropagate from selected blade
-			h_r_VB_back_file = f'{outDir}/h_r_VB_histogram_{x}_0.dat'
-			backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/h_r_VB_output.dat {h_r_VB_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
-			print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
-			os.system(backprop_command)
-			# Plot result of backpropagation
-			h_r_VB_back_image_data = output_to_image_data(h_r_VB_back_file)
-			plot_results(h_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}09_h_r_VB_back_{i}_image.pdf', noShow=noShow)
-			plot_results(h_r_VB_back_image_data, plot_type='x', save_image=f'{imageDir}10_h_r_VB_back_x_{i}_image.pdf', noShow=noShow)
-	
-			# Find peak of backpropagated distribution, store in hxz0
-			xsrc = find_image_peak(h_r_VB_back_image_data, 'x')
-			
-			return xsrc
-		else:
-			print('incorrect direction specified. specify "vertical" or "horizontal"')
-		
-	# Non major extent vx, hy used for determining bounds on backprop 
+	# Non major extent used for determining bounds on backprop 
 	
 	# --------------------------------
 	# find vyz0
@@ -159,7 +90,34 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 	# For each blade position, backpropagate only neutrons at that position 
 	vyz0 = []
 	for i, y in enumerate(vy): 
-		yz0 = blade_optimal_pos(y, direction='vertical')
+		# Find y extent for blade selection
+		ymin = (zvb * y)/ (zvb + length/2) 
+		ymax = (zvb * y)/ (zvb - length/2) 
+		if ymax < ymin: # make sure ymin < ymax
+			tmp = ymax
+			ymax = ymin
+			ymin = tmp
+
+		# Generate image of what is being backpropagated
+		v_r_VB_blade_file = f'{outDir}/v_r_VB_histogram_{y}_{zvb-0.001}.dat'
+		os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/v_r_VB_output.dat {v_r_VB_blade_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}")
+		# Plot what is being backpropagated
+		v_r_VB_blade_image_data = output_to_image_data(v_r_VB_blade_file)
+		plot_results(v_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}05_v_r_VB_blade_{i}_image.pdf', noShow=noShow)
+
+		# Backpropagate from selected blade
+		v_r_VB_back_file = f'{outDir}/v_r_VB_histogram_{y}_0.dat'
+		backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.10 {outDir}/v_r_VB_output.dat {v_r_VB_back_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}"
+		print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
+		os.system(backprop_command)
+		# Plot result of backpropagation
+		v_r_VB_back_image_data = output_to_image_data(v_r_VB_back_file)
+		plot_results(v_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}06_v_r_VB_back_{i}_image.pdf', noShow=noShow)
+		plot_results(v_r_VB_back_image_data, plot_type='y', save_image=f'{imageDir}07_v_r_VB_back_y_{i}_image.pdf', noShow=noShow)
+
+		# Find peak of backpropagated distribution, store in vyz0
+		yz0 = find_image_peak(v_r_VB_back_image_data, 'y')
+
 		vyz0.append(yz0)
 	vyz0 = np.array(vyz0)
 
@@ -179,8 +137,35 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 	# For each blade position, backpropagate only neutrons at that position 
 	hxz0 = []
 	for i, x in enumerate(hx): 
-		xz0 = blade_optimal_pos(x, direction='horizontal')
-		hxz0.append(xz0)
+		# Find y extent for blade selection
+		xmin = (zvb * x)/ (zvb + length/2) 
+		xmax = (zvb * x)/ (zvb - length/2) 
+		if xmax < xmin: # make sure xmin < xmax
+			tmp = xmax
+			xmax = xmin
+			xmin = tmp
+
+		# Generate image of what is being backpropagated
+		h_r_VB_blade_file = f'{outDir}/h_r_VB_histogram_{x}_{zvb-0.001}.dat'
+		os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {h_r_VB_blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
+		# Plot what is being backpropagated
+		h_r_VB_blade_image_data = output_to_image_data(h_r_VB_blade_file)
+		plot_results(h_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}08_h_r_VB_blade_{i}_image.pdf', noShow=noShow)
+
+		# Backpropagate from selected blade
+		h_r_VB_back_file = f'{outDir}/h_r_VB_histogram_{x}_0.dat'
+		backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.10 {outDir}/h_r_VB_output.dat {h_r_VB_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
+		print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
+		os.system(backprop_command)
+		# Plot result of backpropagation
+		h_r_VB_back_image_data = output_to_image_data(h_r_VB_back_file)
+		plot_results(h_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}09_h_r_VB_back_{i}_image.pdf', noShow=noShow)
+		plot_results(h_r_VB_back_image_data, plot_type='x', save_image=f'{imageDir}10_h_r_VB_back_x_{i}_image.pdf', noShow=noShow)
+
+		# Find peak of backpropagated distribution, store in hxz0
+		xz0 = find_image_peak(h_r_VB_back_image_data, 'x')
+
+		hxz0.append(yz0)
 	hxz0 = np.array(hxz0)
 
 	# Remove 'h_r_VB_output.dat' to reduce storage requirements
