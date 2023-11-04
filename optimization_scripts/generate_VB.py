@@ -3,29 +3,30 @@ import math
 import numpy as np
 
 class colors: 
-    RED = '\033[31m'
-    ENDC = '\033[m'
-    GREEN = '\033[32m'
-    YELLOW = '\033[33m'
-    BLUE = '\033[34m'
+	RED = '\033[31m'
+	ENDC = '\033[m'
+	GREEN = '\033[32m'
+	YELLOW = '\033[33m'
+	BLUE = '\033[34m'
 
 # VB blades with pointlike source
 def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
 	print(colors.BLUE + f'VB parameters:\nVB_pos={zvb}, zdet={zdet}, det_pos={det_pos}, VB_length={length}, VB_thickness={thickness}, vy={vy}, hx={hx}' + colors.ENDC)
 
+	# vy, hx [cm]
 	vy0, vy1, vy2, vy3 = 0.01*vy
 	hx0, hx1, hx2, hx3 = 0.01*hx
+	# det_pos [m]
 	xdet, ydet = det_pos
-	ydet *= 0.01
-	xdet *= 0.01
 
 	hvb = vy3-vy0
 	wvb = hx3-hx0
 	y_center = 0.5*(vy3 + vy0)
 	x_center = -0.5*(hx3 + hx0)
 
+	# --------------------------------
 	# Create vertically reflecting blade geometry
-	y_vals_v, angles_v = generate_vb_array(length, thickness, zvb, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
+	y_vals_v, angles_v = generate_VB_array_pointFocused(length, thickness, zvb, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
 
 	# Apply restrictions to blade geometry:
 	mask1_v = np.logical_and(y_vals_v >= vy0, y_vals_v <= vy1)
@@ -37,23 +38,23 @@ def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
 	angles_v = angles_v[final_mask_v]
 
 	# Write the blade geometry to file:
-	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
 	v_blades = []
 
 	print(f'wvb: {wvb}, x_center: {x_center}')
 	for i in range(len(y_vals_v)):
 		# Append each combination of parameters to v_blades list
+		# x extent [m], y extent [m], z extent [m], xpos[m], ypos [m], zpos [m], angle [deg]
 		v_blades.append((wvb, thickness, length, x_center, y_vals_v[i], 0.0, angles_v[i])) # zvb := 0.0 in relation to center of component
 
 	print(y_vals_v)
 	print(angles_v)
 	print(f'number of v_blades: {y_vals_v.size}')
-	v_reflecting_venbla_geometry = "Venbla_vertically_reflecting_geometry.off"
+	v_reflecting_venbla_geometry = f"Venbla_vertically_reflecting_geometry_pointFocused_{zvb}_{zdet}_{det_pos[0]}_{det_pos[1]}_{length}_{thickness}.off"
 	write_VB(v_blades, v_reflecting_venbla_geometry)
 
 	# --------------------------------
 	# Create horizontally reflecting blade geometry
-	x_vals_h, angles_h = generate_vb_array(length, thickness, zvb, zdet, 100, 0.01, xdet) # wvb = 100, wdet = 0.01
+	x_vals_h, angles_h = generate_VB_array_pointFocused(length, thickness, zvb, zdet, 100, 0.01, xdet) # wvb = 100, wdet = 0.01
 
 	# Apply restrictions to blade geometry:
 	mask1_h = np.logical_and(x_vals_h >= hx0, x_vals_h <= hx1)
@@ -65,46 +66,171 @@ def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
 	angles_h = angles_h[final_mask_h]
 
 	# Write the blade geometry to file:
-	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
 	h_blades = []
 
 	print(f'hvb: {hvb}, y_center: {y_center}')
 	for i in range(len(x_vals_h)):
 		# Append each combination of parameters to h_blades list
+		# x extent [m], y extent [m], z extent [m], xpos[m], ypos [m], zpos [m], angle [deg]
 		h_blades.append((hvb, thickness, length, y_center, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
 		#h_blades.append((hvb, thickness, length, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
 
 	print(x_vals_h)
 	print(angles_h)
 	print(f'number of h_blades: {x_vals_h.size}')
-	h_reflecting_venbla_geometry = "Venbla_horizontally_reflecting_geometry.off"
+	h_reflecting_venbla_geometry = f"Venbla_horizontally_reflecting_geometry_pointFocused_{zvb}_{zdet}_{det_pos[0]}_{det_pos[1]}_{length}_{thickness}.off"
 	write_VB(h_blades, h_reflecting_venbla_geometry)
 
 	return v_reflecting_venbla_geometry, h_reflecting_venbla_geometry 
 
 # VB blades individually focused 
-def generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx, vyz0, hxz0):
+def generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, vyz0, hxz0):
 	print(colors.BLUE + f'VB parameters:\nVB_pos={VB_pos}, zdet={zdet}, det_pos={det_pos}, VB_length={VB_length}, VB_thickness={VB_thickness}, vy={vy}, hx={hx}, vyz0={vyz0}, hxz0={hxz0}' + colors.ENDC)
 
-	vy0, vy1, vy2, vy3 = 0.01*vy
-	hx0, hx1, hx2, hx3 = 0.01*hx
+	# vy, hx [cm]
+	vy *= 0.01
+	hx *= 0.01
+	# xdet, ydet [m]
 	xdet, ydet = det_pos
-	ydet *= 0.01
-	xdet *= 0.01
 
 	hvb = vy3-vy0
 	wvb = hx3-hx0
 	y_center = 0.5*(vy3 + vy0)
 	x_center = -0.5*(hx3 + hx0)
 
-	#TODO some pseudocode here!
-	# 1. 
+	# --------------------------------
+	# Create vertically reflecting blade geometry
+	y_vals_v, angles_v = generate_VB_array_pointFocused(length, thickness, zvb, zdet, ydet, vy, vyz0) 
+
+	# Write generated geometry to file
+	v_blades = []
+
+	print(f'wvb: {wvb}, x_center: {x_center}')
+	for i in range(len(y_vals_v)):
+		# Append each combination of parameters to v_blades list
+		# x extent [m], y extent [m], z extent [m], xpos[m], ypos [m], zpos [m], angle [deg]
+		v_blades.append((wvb, thickness, length, x_center, y_vals_v[i], 0.0, angles_v[i])) # zvb := 0.0 in relation to center of component
+
+	print(y_vals_v)
+	print(angles_v)
+	print(f'number of v_blades: {y_vals_v.size}')
+	v_reflecting_venbla_geometry = f"Venbla_vertically_reflecting_geometry_bladeFocused_{zvb}_{zdet}_{det_pos[0]}_{det_pos[1]}_{length}_{thickness}.off"
+	write_VB(v_blades, v_reflecting_venbla_geometry)
+
+	# --------------------------------
+	# Create horizontally reflecting blade geometry
+	x_vals_h, angles_h = generate_VB_array_bladeFocused(length, thickness, zvb, zdet, xdet, hx, hxz0)
+
+	# Write the blade geometry to file:
+	h_blades = []
+
+	print(f'hvb: {hvb}, y_center: {y_center}')
+	for i in range(len(x_vals_h)):
+		# Append each combination of parameters to h_blades list
+		# x extent [m], y extent [m], z extent [m], xpos[m], ypos [m], zpos [m], angle [deg]
+		h_blades.append((hvb, thickness, length, y_center, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
+
+	print(x_vals_h)
+	print(angles_h)
+	print(f'number of h_blades: {x_vals_h.size}')
+	h_reflecting_venbla_geometry = f"Venbla_horizontally_reflecting_geometry_bladeFocused_{zvb}_{zdet}_{det_pos[0]}_{det_pos[1]}_{length}_{thickness}.off"
+	write_VB(h_blades, h_reflecting_venbla_geometry)
 
 	return v_reflecting_venbla_geometry, h_reflecting_venbla_geometry 
 
+def generate_VB_array_bladeFocused(length, thickness, zvb, zdet, ydet, vy, vyz0):
+	#TODO fill in pseudocode 
+	y_vals = np.zeros(10000) 
+	angles = np.zeros(10000) 
+
+	def calc_blade_angle(y_src, y_blade, z_blade, y_target, z_target):
+		theta_i = math.atan((y_blade - y_src)/ z_blade)					# angle of incident ray (assumed z_src = 0)
+		theta_r = math.atan((y_blade - y_target)/ (z_target - z_blade))	# angle of reflected ray hitting target
+		theta_b = 0.5 * (theta_i - theta_r)								# angle of blade for given reflection
+		return theta_b
+
+	# --------------------------------
+	# Generate upper array
+
+	# inner angle, outer angle for vb blades
+	inner_angle = math.atan(vy[3] / (zvb + zdet))
+	outer_angle = math.atan(vy[2] / zvb)
+
+	# 1. Generate top blade
+	i = 0
+	y_vals[i] = vy[3]  # center of blade = (zvb, vy[3])
+	angles[i] = calc_blade_angle(vyz0[3], y_vals[i], zvb, ydet, zdet)  # mirror angle required for reflection from (0, ysrc) to (zdet, 0)
+
+	# 2. generate successive blades with following:
+		# 2.c: Generate blade focused from ysrc, to y_blade, to y_target 
+	while (inner_angle <= math.atan(y_vals[i] / zvb) <= outer_angle):
+		i += 1
+
+		# 2.a: Use previous blade and previous ysrc to find angle for top left of current blade (accounting for thickness of blades)
+		y_bottom_right_previous = (y_vals[i - 1] + (length / 2.) * math.tan(angles[i - 1]) - (thickness / 2.) * math.cos(angles[i - 1])
+		theta = math.atan(y_bottom_right_previous - y_src) / (zvb + length / 2.))
+
+		# top left of new blade (accounting for thickness)
+		y_top_left = (zvb - (length / 2.)) * math.tan(theta)
+		y0 = y_top_left - thickness
+
+		yrc = y0			# yrc is y center of reflection on blade, initially defined for angle=0
+		yrctmp = yrc + 1	# yrctmp is previous yrc, used to determine when to end loop. Define initial as arbitrarily greater
+
+		# 2.b: Interpolate ysrc linearly between vyz0[2], vyzr0[3] for top blades, vyz0[0], vyz0[1] for bottom blades 
+
+		ysrc = (vyz0[3] - vyz0[2]) 
+
+		j=0
+		max_iter = 10
+		while ((0.000001 < abs(yrctmp - yrc)) and (j < max_iter)):
+			j+=1
+			yrctmp = yrc
+
+			delta = 0.5 * (math.atan(zdet / yrc) - math.atan(zvb / (yrc - ysrc)))
+			yrc = y0 + math.tan(delta) * (length / 2.)
+		if j == max_iter:
+			print("exceeded max iteration count!")
+
+		angles[i] = math.atan((yrc - y0) / (length / 2.))
+		y_vals[i] = yrc + (thickness / 2.) * math.cos(angles[i])  # y_vals stores center of blade, not center of reflective surface
+
+	numBlades = 2 * i
+
+	# write over blade i, it is lower than <inner_angle>
+	for j in range(i):
+		# define lower blades
+		angles[j + i] = -angles[j]
+		y_vals[j + i] = -y_vals[j]
+
+	# targeted reflection
+	for j in range(numBlades):
+		# if j < i, reflecting surface on bottom of blade
+		# if j >= i, reflecting surface on top of blade
+		if j < i:
+			yrc = y_vals[j] - (thickness / 2.) * math.cos(angles[j])
+		else:
+			yrc = y_vals[j] + (thickness / 2.) * math.cos(angles[j])
+
+		# zvb != zrc because blades are rotated about the center of the blade,
+		# zrc = zvb + (thickness/2.) * abs(sin(angles[j])).
+		# approximation of zrc=zvb is valid for small angles[], small thickness
+
+		# shift all blades by d_angle to target reflection to (zdet, ydet) relative (zvb, 0)
+		d_angle = 0.5 * (math.atan(yrc / zdet) - math.atan((yrc - ydet) / zdet))
+		angles[j] += d_angle
+
+	if y_vals[i] > y_vals[i - 1] - thickness:
+		print("ERROR: blade overlap! max overlap @center=", y_vals[i] - (y_vals[i - 1] - thickness))
+	if numBlades > 9999:
+		print("ERROR: numBlades greater than blade limit!")
+	
+	# remove trailing zeros from y_vals, angles
+	return np.trim_zeros(y_vals, 'b'), np.trim_zeros(angles, 'b')
+
 # VB focused to y=0
 # assumed ysrc = 0
-def generate_vb_array(length, thickness, zvb, zdet, hvb, hdet, ydet):
+def generate_VB_array_pointFocused(length, thickness, zvb, zdet, hvb, hdet, ydet):
 	y_vals = np.zeros(10000) 
 	angles = np.zeros(10000) 
 

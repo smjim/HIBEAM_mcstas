@@ -67,12 +67,21 @@ HIBEAM experiment is meant to improve upon 1991 (published 1994) ILL nnbar oscil
 
 Using the results of this simulation, tracks were backpropagated to find optimal source position and produce the following visualizations of beam profile evolution:
 ![doc/E6_propagation.gif](./doc/E6_propagation.gif)
+Video of backtraced tracks propagation through center of moderator for E6 beamline.
 ![doc/HIBEAM_profile_evolution_y.gif](./doc/HIBEAM_profile_evolution_y.gif)
+Beam profile evolution y histogram shows how neutron tracks originate at moderator with width 3cm, then spread out as they approach the monolith guide.
+![doc/blade_xpos_scan.gif](./doc/blade_xpos_scan.gif)
+To create venetian blinds with individually focused blades, mcpl tracks which intersect horizontally reflecting blades were separated out by blade and then backpropagated to moderator position. 
+Video above shows evolution of the backpropagated intensity images, scanning blade x position.
+Blades closer to center have less solid angle (shown in another [Desmos](https://www.desmos.com/calculator/qobmf0vyrc) model), so backpropagated images have less intensity.
 
-`Venbla.comp` is a novel McStas component offering a simulation of Venetian blinds modifiable directly in .instr files, but it seems to have a problem handling reflections on the corners of blades.  
-`Venbla_to_off.py` uses the same code to generate the geometry of venetian blinds, but exports to .off file format for use with the `guide_anyshape` component in McStas.
+Scripts in `optimization_scripts/` provide automatic generation and testing of instrument configurations. See `optimization_scripts/README.md` for instructions. 
+`Venbla.comp` is a novel McStas component offering a simulation of Venetian blinds modifiable directly in .instr files, but it seems to have a problem handling reflections on the corners of blades.   
+`Venbla_to_off.py` uses the same code to generate the geometry of venetian blinds, but exports to .off file format for use with the `guide_anyshape` component in McStas.  
 
 ## 2 Installation
+ - When using scripts in `optimization_scripts/`, some parameters still require manual configuration based on the system running the programs. 
+ For example, in `optimization_scripts/run_hibeam.py`, users must manually change the lines in the run command for `--mpi=n`, and select either `.mcpl.gz` or `.mcpl` for the backpropagation commands, depending on instrument output.
 
 
 ## 3 Usage
