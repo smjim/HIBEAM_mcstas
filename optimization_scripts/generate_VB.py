@@ -1,17 +1,110 @@
+# Functions for generation of focused VB design 
 import math
 import numpy as np
 
-class colors:
+class colors: 
     RED = '\033[31m'
     ENDC = '\033[m'
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
     BLUE = '\033[34m'
 
-# Define geometry
-def generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet):
-	print(colors.BLUE + f'VB parameters:\nVB_pos={zvb}, zdet={zdet}, det_pos=(0, {ydet}), VB_length={length}, VB_thickness={thickness}, vy=-, hx=-' + colors.ENDC)
+# VB blades with pointlike source
+def generate_VB_point_focused(zvb, zdet, det_pos, length, thickness, vy, hx):
+	print(colors.BLUE + f'VB parameters:\nVB_pos={zvb}, zdet={zdet}, det_pos={det_pos}, VB_length={length}, VB_thickness={thickness}, vy={vy}, hx={hx}' + colors.ENDC)
 
+	vy0, vy1, vy2, vy3 = 0.01*vy
+	hx0, hx1, hx2, hx3 = 0.01*hx
+	xdet, ydet = det_pos
+	ydet *= 0.01
+	xdet *= 0.01
+
+	hvb = vy3-vy0
+	wvb = hx3-hx0
+	y_center = 0.5*(vy3 + vy0)
+	x_center = -0.5*(hx3 + hx0)
+
+	# Create vertically reflecting blade geometry
+	y_vals_v, angles_v = generate_vb_array(length, thickness, zvb, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
+
+	# Apply restrictions to blade geometry:
+	mask1_v = np.logical_and(y_vals_v >= vy0, y_vals_v <= vy1)
+	mask2_v = np.logical_and(y_vals_v >= vy2, y_vals_v <= vy3)
+	final_mask_v = np.logical_or(mask1_v, mask2_v)
+
+	# apply the mask to both x_coords and y_coords
+	y_vals_v = y_vals_v[final_mask_v]
+	angles_v = angles_v[final_mask_v]
+
+	# Write the blade geometry to file:
+	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
+	v_blades = []
+
+	print(f'wvb: {wvb}, x_center: {x_center}')
+	for i in range(len(y_vals_v)):
+		# Append each combination of parameters to v_blades list
+		v_blades.append((wvb, thickness, length, x_center, y_vals_v[i], 0.0, angles_v[i])) # zvb := 0.0 in relation to center of component
+
+	print(y_vals_v)
+	print(angles_v)
+	print(f'number of v_blades: {y_vals_v.size}')
+	v_reflecting_venbla_geometry = "Venbla_vertically_reflecting_geometry.off"
+	write_VB(v_blades, v_reflecting_venbla_geometry)
+
+	# --------------------------------
+	# Create horizontally reflecting blade geometry
+	x_vals_h, angles_h = generate_vb_array(length, thickness, zvb, zdet, 100, 0.01, xdet) # wvb = 100, wdet = 0.01
+
+	# Apply restrictions to blade geometry:
+	mask1_h = np.logical_and(x_vals_h >= hx0, x_vals_h <= hx1)
+	mask2_h = np.logical_and(x_vals_h >= hx2, x_vals_h <= hx3)
+	final_mask_h = np.logical_or(mask1_h, mask2_h)
+
+	# apply the mask to both x_coords and y_coords
+	x_vals_h = x_vals_h[final_mask_h]
+	angles_h = angles_h[final_mask_h]
+
+	# Write the blade geometry to file:
+	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
+	h_blades = []
+
+	print(f'hvb: {hvb}, y_center: {y_center}')
+	for i in range(len(x_vals_h)):
+		# Append each combination of parameters to h_blades list
+		h_blades.append((hvb, thickness, length, y_center, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
+		#h_blades.append((hvb, thickness, length, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
+
+	print(x_vals_h)
+	print(angles_h)
+	print(f'number of h_blades: {x_vals_h.size}')
+	h_reflecting_venbla_geometry = "Venbla_horizontally_reflecting_geometry.off"
+	write_VB(h_blades, h_reflecting_venbla_geometry)
+
+	return v_reflecting_venbla_geometry, h_reflecting_venbla_geometry 
+
+# VB blades individually focused 
+def generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx, vyz0, hxz0):
+	print(colors.BLUE + f'VB parameters:\nVB_pos={VB_pos}, zdet={zdet}, det_pos={det_pos}, VB_length={VB_length}, VB_thickness={VB_thickness}, vy={vy}, hx={hx}, vyz0={vyz0}, hxz0={hxz0}' + colors.ENDC)
+
+	vy0, vy1, vy2, vy3 = 0.01*vy
+	hx0, hx1, hx2, hx3 = 0.01*hx
+	xdet, ydet = det_pos
+	ydet *= 0.01
+	xdet *= 0.01
+
+	hvb = vy3-vy0
+	wvb = hx3-hx0
+	y_center = 0.5*(vy3 + vy0)
+	x_center = -0.5*(hx3 + hx0)
+
+	#TODO some pseudocode here!
+	# 1. 
+
+	return v_reflecting_venbla_geometry, h_reflecting_venbla_geometry 
+
+# VB focused to y=0
+# assumed ysrc = 0
+def generate_vb_array(length, thickness, zvb, zdet, hvb, hdet, ydet):
 	y_vals = np.zeros(10000) 
 	angles = np.zeros(10000) 
 
@@ -144,7 +237,7 @@ def generate_rectangular_prism(x_extent, y_extent, z_extent, xpos, ypos, zpos, a
 
 	return translated_vertices, faces
 
-def write_off(rectangular_prisms, filename):
+def write_VB(rectangular_prisms, filename):
 	all_vertices = []
 	all_faces = []
 
@@ -160,109 +253,3 @@ def write_off(rectangular_prisms, filename):
 		all_faces.extend([face_index + num_vertices for face_index in face] for face in faces)
 
 	write_rectangular_prism(all_vertices, all_faces, filename)
-
-if __name__ == "__main__":
-	import argparse
-
-	parser = argparse.ArgumentParser(description="Create Venetian Blinds geometry with given parameters")
-
-	parser.add_argument("length", type=float, help="Z length of blades")
-	parser.add_argument("thickness", type=float, help="Thickness of blades")
-	parser.add_argument("zvb", type=float, help="Z distance between source and center of vb")
-	parser.add_argument("zdet", type=float, help="Z distance between center of vb and target")
-	parser.add_argument('--detdim', nargs=2, type=float, metavar=('detwidth', 'detheight'),
-                    help='width and height of detector')
-	parser.add_argument('--detpos', nargs=2, type=float, metavar=('detx', 'dety'),
-                    help='displacement of detector position')
-	parser.add_argument('--xbounds', nargs=4, type=float, metavar=('x0', 'x1', 'x2', 'x3'),
-                    help='X bounds for creation of 2 sets of venetian blinds')
-	parser.add_argument('--ybounds', nargs=4, type=float, metavar=('y0', 'y1', 'y2', 'y3'),
-                    help='Y bounds for creation of 2 sets of venetian blinds')
-
-	# Parse arguments
-	args = parser.parse_args()
-
-	length = args.length
-	thickness = args.thickness
-	zvb = args.zvb
-	zdet = args.zdet
-
-	det_dims = args.detdim
-	det_pos = args.detpos
-	x_bounds = args.xbounds
-	y_bounds = args.ybounds
-
-	# --------------------------------
-	# Extract parameters
-	wvb = 2*max(np.abs(x_bounds[0]), np.abs(x_bounds[3]))
-	hvb = 2*max(np.abs(y_bounds[0]), np.abs(y_bounds[3]))
-
-	wdet, hdet = det_dims
-	xdet, ydet = det_pos
-
-	# --------------------------------
-	# Create vertically reflecting blade geometry
-	y_vals_v, angles_v = generate_venbla(length, thickness, zvb, zdet, 100, 0.01, ydet)
-	#y_vals_v, angles_v = generate_venbla(length, thickness, zvb, zdet, hvb, hdet, ydet)
-
-	# Apply restrictions to blade geometry:
-	mask1_v = np.logical_and(y_vals_v >= y_bounds[0], y_vals_v <= y_bounds[1])
-	mask2_v = np.logical_and(y_vals_v >= y_bounds[2], y_vals_v <= y_bounds[3])
-	final_mask_v = np.logical_or(mask1_v, mask2_v)
-
-	# apply the mask to both x_coords and y_coords
-	y_vals_v = y_vals_v[final_mask_v]
-	angles_v = angles_v[final_mask_v]
-
-	# Write the blade geometry to file:
-	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
-	v_blades = []
-	
-	wvb = x_bounds[3] - x_bounds[0]
-	x_center = -0.5*(x_bounds[3] + x_bounds[0])
-	print(f'wvb: {wvb}, x_center: {x_center}')
-	for i in range(len(y_vals_v)):
-		# Append each combination of parameters to v_blades list
-		v_blades.append((wvb, thickness, length, x_center, y_vals_v[i], 0.0, angles_v[i])) # zvb := 0.0 in relation to center of component
-	
-	print(y_vals_v)
-	print(angles_v)
-	print(f'number of v_blades: {y_vals_v.size}')
-	filename = "Venbla_vertically_reflecting_geometry.off"
-	write_off(v_blades, filename)
-
-	# --------------------------------
-	# Create horizontally reflecting blade geometry
-	x_vals_h, angles_h = generate_venbla(length, thickness, zvb, zdet, 100, 0.01, xdet)
-	#x_vals_h, angles_h = generate_venbla(length, thickness, zvb+(length+0.01), zdet-(length+0.01), 100, 0.01, xdet)
-	print(zvb+(length+0.01), zdet-(length+0.01))
-	#x_vals_h, angles_h = generate_venbla(length, thickness, 15.31, (65-15.31), 100, 0.01, xdet)
-	#x_vals_h, angles_h = generate_venbla(length, thickness, zvb+(length+0.01), zdet-(length+0.01), 100, 0.01, xdet)
-	#x_vals_h, angles_h = generate_venbla(length, thickness, zvb+(length+0.01), zdet-(length+0.01), wvb, wdet, xdet)
-
-	# Apply restrictions to blade geometry:
-	mask1_h = np.logical_and(x_vals_h >= x_bounds[0], x_vals_h <= x_bounds[1])
-	mask2_h = np.logical_and(x_vals_h >= x_bounds[2], x_vals_h <= x_bounds[3])
-	final_mask_h = np.logical_or(mask1_h, mask2_h)
-	
-	# apply the mask to both x_coords and y_coords
-	x_vals_h = x_vals_h[final_mask_h]
-	angles_h = angles_h[final_mask_h]
-	
-	# Write the blade geometry to file:
-	# x extent [m], y extent [m], z extent [m], ypos [m], zpos [m], angle [deg]
-	h_blades = []
-	
-	hvb = y_bounds[3] - y_bounds[0]
-	y_center = 0.5*(y_bounds[3] + y_bounds[0])
-	print(f'hvb: {hvb}, y_center: {y_center}')
-	for i in range(len(x_vals_h)):
-		# Append each combination of parameters to h_blades list
-		h_blades.append((hvb, thickness, length, y_center, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
-		#h_blades.append((hvb, thickness, length, x_vals_h[i], 0.0, angles_h[i])) # zvb := 0.0 in relation to center of component
-	
-	print(x_vals_h)
-	print(angles_h)
-	print(f'number of h_blades: {x_vals_h.size}')
-	filename = "Venbla_horizontally_reflecting_geometry.off"
-	write_off(h_blades, filename)

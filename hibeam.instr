@@ -26,7 +26,7 @@
 ********************************************************************************/
 
 DEFINE INSTRUMENT hibeam (	VB_pos = 15,					// Z distance from source to Venetian Blinds
-							VB_length = 0.30,					// Z extent of Venetian Blinds
+							VB_length = 0.30,				// Z extent of Venetian Blinds
 							VB_m = 4						// m value of Venetian Blinds supermirrors
 )
 
@@ -51,7 +51,7 @@ AT (0,0,0) ABSOLUTE
 COMPONENT Source = ESS_butterfly(
  sector = "E", beamline = 6,
  cold_frac = 0.7, dist = 1.89074,
- focus_xw = 0.113, focus_yh = 0.124,
+ focus_xw = 0.104, focus_yh = 0.0934706,
  Lmin = 0.1, Lmax = 20,
  n_pulses = 1, acc_power = 2)
 AT (0,0,0) ABSOLUTE
@@ -64,38 +64,46 @@ AT (0.0,0.0,5.390744651928291) RELATIVE Source
 
 COMPONENT nboa_engineering_constraints = Shape(
  geometry = "nboa_engineering_constraints.off")
-AT (0.0,-0.055,-1.757) RELATIVE BPCS
+AT (0.0,-0.05530292499999999,-1.787) RELATIVE BPCS
 
 COMPONENT L_monitor_entry = L_monitor(
- nL = 500, 
- xmin = -0.0565, xmax = 0.0565, 
- ymin = -0.062, ymax = 0.025, 
- Lmin = 0.1, Lmax = 20)
+ nL = 500, xmin = -0.052,
+ xmax = 0.052, ymin = -0.0467353,
+ ymax = 0.0177177, Lmin = 0.1,
+ Lmax = 20)
 AT (0.0,0,-3.497) RELATIVE BPCS
 
-COMPONENT slit = Slit(
- xmin = -0.0564588, xmax = 0.0564588,
- ymin = -0.0619548, ymax = 0.0216618)
-AT (0.0,0,-3.497) RELATIVE BPCS
+COMPONENT monolith_guide_entrance_slit = Slit(
+ xmin = -0.0320941, xmax = 0.0515952,
+ ymin = -0.0390068, ymax = 0.0247853)
+AT (0.0,0.0,-3.497) RELATIVE BPCS
 
 COMPONENT asym_monolith_guide = Guide_anyshape(
  m = 4, geometry = "monolith_guide.off")
-AT (0,0,32.0) RELATIVE BPCS
+AT (0.0,0.0,-3.497) RELATIVE BPCS
 EXTEND %{
 if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
 %}
 
-COMPONENT L_monitor_exit = L_monitor(
- nL = 500,  
- xmin = -0.097, xmax = 0.097,
- ymin = -0.145, ymax = 0.035,
- Lmin = 0.1, Lmax = 20)
-AT (0.0,0.0,5.390744651928291) RELATIVE Source
+COMPONENT monolith_guide_solid_angle_exit_top = Shape(
+ geometry = "monolith_guide_solid_angle_exit_top.off", center = 0)
+AT (0,0,0) ABSOLUTE
 
-COMPONENT PSD_monitor_exit_guide = PSD_monitor(
- xmin = -0.097, xmax = 0.097,
- ymin = -0.145, ymax = 0.035)
-AT (0.0,0.0,-0.017) RELATIVE BPCS
+COMPONENT monolith_guide_solid_angle_exit_bottom = Shape(
+ geometry = "monolith_guide_solid_angle_exit_bottom.off", center = 0)
+AT (0,0,0) ABSOLUTE
+
+COMPONENT PSD_monitor_exit_monolith_guide = PSD_monitor(
+ xmin = 0.0171838, xmax = 0.160901,
+ ymin = -0.156969, ymax = 0.134965)
+AT (0.0,0.0,-0.077) RELATIVE BPCS
+
+COMPONENT L_monitor_exit_monolith_guide = L_monitor(
+ nL = 500,
+ xmin = 0.0171838, xmax = 0.160901,
+ ymin = -0.156969, ymax = 0.134965,
+ Lmin=0.1, Lmax=20)
+AT (0.0,0.0,-0.077) RELATIVE BPCS
 
 COMPONENT bunker_wall = Shape(
  radius = 15, yheight = 2,
@@ -120,6 +128,9 @@ COMPONENT V_Reflecting_Venbla = Guide_anyshape(
  m=VB_m,
  geometry="Venbla_vertically_reflecting_geometry.off")
 AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System 
+EXTEND %{
+if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
+%}
 
 COMPONENT v_reflecting_VB_monitor_midpoint = PSD_monitor(
     nx=100,
@@ -150,6 +161,9 @@ COMPONENT H_Reflecting_Venbla = Guide_anyshape(
  geometry="Venbla_horizontally_reflecting_geometry.off")
 AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
 ROTATED (0.0, 0.0, 90) RELATIVE HIBEAM_Venbla_Coordinate_System
+EXTEND %{
+if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
+%}
 
 COMPONENT h_reflecting_VB_monitor_midpoint = PSD_monitor(
     nx=100,
