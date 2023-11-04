@@ -137,7 +137,7 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 			h_r_VB_back_image_data = output_to_image_data(h_r_VB_back_file)
 			plot_results(h_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}09_h_r_VB_back_{i}_image.pdf', noShow=noShow)
 			plot_results(h_r_VB_back_image_data, plot_type='x', save_image=f'{imageDir}10_h_r_VB_back_x_{i}_image.pdf', noShow=noShow)
-	
+
 			# Find peak of backpropagated distribution, store in hxz0
 			xsrc = find_image_peak(h_r_VB_back_image_data, 'x')
 			

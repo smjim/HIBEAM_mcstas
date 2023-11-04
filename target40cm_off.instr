@@ -221,6 +221,10 @@ COMPONENT v_reflecting_VB_monitor_midpoint = PSD_monitor(
     yheight=1.0)
 AT (0, 0, 0) RELATIVE HIBEAM_Venbla_Coordinate_System
 
+COMPONENT v_r_VB_mcpl_output = MCPL_output(
+    filename="v_r_VB_output.mcpl")
+AT (0, 0, 0) RELATIVE HIBEAM_Venbla_Coordinate_System
+
 COMPONENT VB_monitor_midpoint = PSD_monitor(
     nx=100,
     ny=100,
@@ -252,6 +256,10 @@ COMPONENT h_reflecting_VB_monitor_midpoint = PSD_monitor(
     filename="h_reflecting_VB_pos_image_midpoint.dat",
     xwidth=1.0,
     yheight=1.0)
+AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+COMPONENT h_r_VB_mcpl_output = MCPL_output(
+    filename="h_r_VB_output.mcpl")
 AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
 
 COMPONENT VB_monitor_exit = PSD_monitor(
@@ -352,7 +360,7 @@ COMPONENT slit_target = Slit(
     radius=0.20)
 AT (target_x, target_y, 3e-9) RELATIVE Target_Coordinate_System 
 
-COMPONENT mcpl_output = MCPL_output(
+COMPONENT target_mcpl_output = MCPL_output(
     filename="target_output.mcpl")
 AT (0, 0, 4e-9) RELATIVE Target_Coordinate_System
 
