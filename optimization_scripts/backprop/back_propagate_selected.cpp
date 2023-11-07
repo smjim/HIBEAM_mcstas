@@ -3,6 +3,9 @@
 // then writes histogram in McStas file format for plotting/ determining distribution characteristics in different projections
 // Backpropagates from target_pos to zvb
 // Selection is in the form (--rectangle x0 y0 x1 y1), and it will backpropagate only neutrons within the defined x, y bounds.
+
+// Store image with tracks weighted by ToF^2, so that it prefers colder neutrons
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -86,7 +89,8 @@ int main(int argc, char** argv) {
 			if (xAtZ >= xmin && yAtZ >= ymin && xAtZ <= xmax && yAtZ <= ymax) {
 				int xBin = static_cast<int>((xAtZ - xmin) / binSize);
 				int yBin = static_cast<int>((yAtZ - ymin) / binSize);
-				I_histogram[yBin][xBin] += data.weight;
+				I_histogram[yBin][xBin] += data.weight*data.t*data.t;	// weight neutrons by weight * Tof^2 for FoM
+				//I_histogram[yBin][xBin] += data.weight;				// weight neutrons by only weight
 				N_histogram[yBin][xBin] ++;
 			}
 		}
@@ -101,18 +105,18 @@ int main(int argc, char** argv) {
 		outFile << "# Format: McCode with text headers" << std::endl;
 		outFile << "# Instrument: HIBEAM" << std::endl;
 		outFile << "# type: array_2d(" << numBinsX << ", " << numBinsY << ")" << std::endl;
-		outFile << "# component: BackTracing Histogram" << std::endl;
+		outFile << "# component: TOF BackTracing Histogram" << std::endl;
 		outFile << "# position: " << vb_x << " " << vb_y << " " << zpos << std::endl;
-		outFile << "# title: PSD monitor" << std::endl;
+		outFile << "# title: PSD TOF monitor" << std::endl;
 		outFile << "# xvar: X" << std::endl;
 		outFile << "# yvar: Y" << std::endl;
 		outFile << "# xlabel: X position [cm]" << std::endl;
 		outFile << "# ylabel: Y position [cm]" << std::endl;
-		outFile << "# zvar: I" << std::endl;
+		outFile << "# zvar: n*ToF^2" << std::endl;
 		outFile << "# xylimits: " << 100*xmin << " " << 100*xmax << " " << 100*ymin << " " << 100*ymax << std::endl;
 
 		// output I array
-		outFile << "# Data [] I:" << std::endl;
+		outFile << "# Data [] n*ToF^2:" << std::endl;
 		for (int yBin = 0; yBin < numBinsY; ++yBin) {
 			for (int xBin = 0; xBin < numBinsX; ++xBin) {
 				outFile << I_histogram[yBin][xBin] << " ";
@@ -121,7 +125,7 @@ int main(int argc, char** argv) {
 		}
 
 		// output dummy Ierr array
-		outFile << "# Errors [] I_err:" << std::endl;
+		outFile << "# Errors [] nTsq_err:" << std::endl;
 		for (int yBin = 0; yBin < numBinsY; ++yBin) {
 			for (int xBin = 0; xBin < numBinsX; ++xBin) {
 				outFile << 0 << " ";
