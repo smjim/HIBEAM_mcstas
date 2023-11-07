@@ -1,7 +1,7 @@
 # Generate focused VB design given .instr file
 import math
 import numpy as np
-from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data
+from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan
 from plot_vb import plot_results, show_instr, count_results
 from generate_VB import generate_VB_point_focused, generate_VB_focused_blades, write_VB
 
@@ -16,6 +16,7 @@ if __name__ == "__main__":
 	parser.add_argument("VB_m", type=float, default=4, help="VB reflectivity m value, default=4")
 	parser.add_argument("det_z", type=float, help="Z distance between center of vb and target")
 	parser.add_argument("output_dir", help="Output directory for calculations and image figures")
+	parser.add_argument('--source_pos_interpolate', metavar='source_pos_file', help='if provided, interpolate blade source position from provided datapoints.')
 	parser.add_argument('--detdim', nargs=2, type=float, metavar=('detwidth', 'detheight'),
 					help='width and height of detector')
 	parser.add_argument('--detpos', nargs=2, type=float, metavar=('detx', 'dety'),
@@ -114,15 +115,21 @@ if __name__ == "__main__":
 	# --------------------------------
 
 	# Step 3.a: Find optimal focus point for y=vy, x=hx blades using backpropagation 
-	vyz0, hxz0 = optimal_source_positions(VB_pos, vx, vy, hx, hy, VB_length, no_VB_outDir, image_dir, noShow) # returns [vy0z0, vy1z0, vy2z0, vy3z0], [hx0z0, hx1z0, hx2z0, hx3z0]
-	print(f'vy: {vy}\nvyz0: {vyz0}')
-	print(f'hx: {hx}\nhxz0: {hxz0}')
+	#show_blade_x_scan(VB_pos, hx, hy, VB_length, no_VB_outDir, image_dir, dx=0.2)
+	#vyz0, hxz0 = optimal_source_positions(VB_pos, vx, vy, hx, hy, VB_length, no_VB_outDir, image_dir, noShow) # returns [vy0z0, vy1z0, vy2z0, vy3z0], [hx0z0, hx1z0, hx2z0, hx3z0]
+	#print(f'vy: {vy}\nvyz0: {vyz0}')
+	#print(f'hx: {hx}\nhxz0: {hxz0}')
 
 	# Step 3.b: Generate Venetian Blinds *assuming linear interpolation of optimal focus point 
 	# returns filenames v_reflecting_venbla_geometry, h_reflecting_venbla_geometry
-	#VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
-	VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx, vyz0, hxz0) # Venetian Blinds with each blade individually focused
+	VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
 	#VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
+	# Venetian Blinds with each blade individually focused
+	if args.source_pos_interpolate is not None:
+		source_pos_file = args.source_pos_interpolate
+		VB_filenames = generate_VB_focused_blades_interpolate(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, interpolate=source_pos_file) # VB with focus interpolated from file with many source positions 
+	#else:
+	#	VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, vyz0, hxz0) # VB with focus linearly interpolated between top and bottom of each blade array 
 
 	# --------------------------------
 	# Step 4: Run with focused VB and show output 

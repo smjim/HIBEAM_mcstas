@@ -89,6 +89,8 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 				ymax = ymin
 				ymin = tmp
 	
+			## In back_propagate_selected.cpp, choose to weight neutrons by ToF^2 or not
+
 			# Generate image of what is being backpropagated
 			v_r_VB_blade_file = f'{outDir}/v_r_VB_histogram_{y}_{zvb-0.001}.dat'
 			os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/v_r_VB_output.dat {v_r_VB_blade_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}")
@@ -106,8 +108,8 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 			plot_results(v_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}06_v_r_VB_back_{i}_image.pdf', noShow=noShow)
 			plot_results(v_r_VB_back_image_data, plot_type='y', save_image=f'{imageDir}07_v_r_VB_back_y_{i}_image.pdf', noShow=noShow)
 	
-			# Find peak of backpropagated distribution, store in vyz0
-			ysrc = find_image_peak(v_r_VB_back_image_data, 'y')
+			# Find weighted average of backpropagated distribution, store in vyz0
+			ysrc = find_image_weighted_average(v_r_VB_back_image_data, 'y')
 	
 			return ysrc
 		elif direction == 'horizontal':
@@ -138,8 +140,8 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 			plot_results(h_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}09_h_r_VB_back_{i}_image.pdf', noShow=noShow)
 			plot_results(h_r_VB_back_image_data, plot_type='x', save_image=f'{imageDir}10_h_r_VB_back_x_{i}_image.pdf', noShow=noShow)
 
-			# Find peak of backpropagated distribution, store in hxz0
-			xsrc = find_image_peak(h_r_VB_back_image_data, 'x')
+			# Find weighted average of backpropagated distribution, store in hxz0
+			xsrc = find_image_weighted_avg(h_r_VB_back_image_data, 'x')
 			
 			return xsrc
 		else:
@@ -158,14 +160,13 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 
 	# For each blade position, backpropagate only neutrons at that position 
 	vyz0 = []
-	for i, y in enumerate(vy): 
+	for y in vy: 
 		yz0 = blade_optimal_pos(y, direction='vertical')
 		vyz0.append(yz0)
 	vyz0 = np.array(vyz0)
 
 	# Remove 'v_r_VB_output.dat' to reduce storage requirements
 	os.remove(f"{outDir}/v_r_VB_output.dat")
-
 
 	# --------------------------------
 	# find hxz0
@@ -188,6 +189,53 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 
 	return vyz0, hxz0 
 
+# Shows how source position varies depending on blade x position
+def show_blade_x_scan(zvb, hx, hy, length, outDir, histDir, dx=0.2):	# dx [cm]
+	# Convert .mcpl to .txt
+	mcpltool_command = f"mcpltool -t {outDir}/h_r_VB_output.mcpl.gz {outDir}/h_r_VB_output.dat"
+	#mcpltool_command = f"mcpltool -t {outDir}/h_r_VB_output.mcpl {outDir}/h_r_VB_output.dat"
+	print(colors.YELLOW + f"\nrunning command:\n{mcpltool_command}" + colors.ENDC + '\n')
+	os.system(mcpltool_command)
+
+	# -----------
+	# Show image of full backpropagation
+	print('Generating full horizontal blade scan:')
+
+	# Perform imaging for first set of blades:
+	for i, x in enumerate(np.concatenate((np.arange(hx[0], hx[1], dx), np.arange(hx[2], hx[3], dx)))):
+		# Generate image of what is being backpropagated
+		blade_file = f'{histDir}/histogram_x_scan_blade_{i:03d}.dat'
+
+		# Find y extent for blade selection
+		xmin = (zvb * x)/ (zvb + length/2) 
+		xmax = (zvb * x)/ (zvb - length/2) 
+		if xmax < xmin: # make sure xmin < xmax
+			tmp = xmax
+			xmax = xmin
+			xmin = tmp
+
+		# Plot what is being backpropagated
+		os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
+		VB_blade_image_data = output_to_image_data(blade_file)
+
+		# Backpropagate from selected blade
+		blade_back_file = f'{histDir}/histogram_x_scan_{i:03d}.dat'
+		backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.001 {outDir}/h_r_VB_output.dat {blade_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
+		print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
+		os.system(backprop_command)
+
+		# For each file, write a line to the top of the output histogram describing the blade xpos:
+		with open(blade_back_file, 'r') as file:
+			original_content = file.read()
+		with open(blade_back_file, 'w') as file:
+			file.write(f'# blade_xpos: {x}\n')
+			file.write(original_content)
+
+		# These backpropagation images are to be analyzed separately by display_sequence.py, see `optimization_scripts/README.md`
+	# -----------
+	# Remove 'h_r_VB_output.dat' to reduce storage requirements
+	os.remove(f"{outDir}/h_r_VB_output.dat")
+
 # analyze McStas intensity distributions from file 
 # return extent, image np array, image err np array as tuple 
 def output_to_image_data(inFile):
@@ -205,8 +253,8 @@ def output_to_image_data(inFile):
 	return dataHeader, extent, np.array(imI), np.array(sigI)
 
 # analyze McStas intensity distribution images
-# return value corresponding to max 
-def find_image_peak(image_data, plot_type):
+# return value corresponding to weighted average of image data summed along plot axis 
+def find_image_weighted_average(image_data, plot_type):
 	dataHeader, extent, image, imageErr = image_data
 
 	# Find the value of x corresponding to maximum y
@@ -216,8 +264,17 @@ def find_image_peak(image_data, plot_type):
 		print(xmax)
 		return xmax
 
+	# Find the average of x weighted by y 
+	def find_weighted_average(x, y):
+		weighted_sum_x = np.sum(x * y)
+		sum_y = np.sum(y)
+		xavg = weighted_sum_x / sum_y
+		
+		print(xavg)
+		return xavg
+
 	# --------------
-	# Find x max:
+	# Find x weighted average:
 	if plot_type == 'x':
 		dx = (extent[1] - extent[0]) / image.shape[1]
 	
@@ -227,11 +284,11 @@ def find_image_peak(image_data, plot_type):
 	
 		x = np.linspace(extent[0], extent[1], np.size(cross_section))
 	
-		xmax = find_max(x, cross_section)
+		xmax = find_weighted_average(x, cross_section)
 		return xmax
 
 	# --------------
-	# Find y max: 
+	# Find y weighted average: 
 	elif plot_type == 'y':
 		dy = (extent[3] - extent[2]) / image.shape[0]
 	
@@ -241,7 +298,7 @@ def find_image_peak(image_data, plot_type):
 	
 		y = np.linspace(extent[3], extent[2], np.size(cross_section))
 	
-		ymax = find_max(y, cross_section)
+		ymax = find_weighted_average(y, cross_section)
 		return ymax
 		
 	else:
