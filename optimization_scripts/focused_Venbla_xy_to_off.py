@@ -3,7 +3,7 @@ import math
 import numpy as np
 from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan
 from plot_vb import plot_results, show_instr, count_results
-from generate_VB import generate_VB_point_focused, generate_VB_focused_blades, write_VB
+from generate_VB import generate_VB_point_focused, generate_VB_bladeFocused, write_VB
 
 if __name__ == "__main__":
 	import argparse
@@ -122,14 +122,14 @@ if __name__ == "__main__":
 
 	# Step 3.b: Generate Venetian Blinds *assuming linear interpolation of optimal focus point 
 	# returns filenames v_reflecting_venbla_geometry, h_reflecting_venbla_geometry
-	VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
+	#VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
 	#VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
 	# Venetian Blinds with each blade individually focused
 	if args.source_pos_interpolate is not None:
 		source_pos_file = args.source_pos_interpolate
-		VB_filenames = generate_VB_focused_blades_interpolate(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, interpolate=source_pos_file) # VB with focus interpolated from file with many source positions 
-	#else:
-	#	VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, vyz0, hxz0) # VB with focus linearly interpolated between top and bottom of each blade array 
+		VB_filenames = generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file) # VB with focus interpolated from file with many source positions 
+	else:
+		VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, vyz0, hxz0) # VB with focus linearly interpolated between top and bottom of each blade array 
 
 	# --------------------------------
 	# Step 4: Run with focused VB and show output 

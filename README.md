@@ -103,4 +103,4 @@ The author would like to acknowledge a similar implementation of the venetian bl
 Under the GNU AFFERO GENERAL PUBLIC LICENSE  
 
 ## Project Status  
-Currently in progress as of 9-24-23  
+Currently in progress as of 11-07-23  
