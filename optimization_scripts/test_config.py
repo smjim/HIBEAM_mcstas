@@ -49,17 +49,7 @@ if __name__ == "__main__":
 	n = 1e6
 	VB_filenames = [None, None]
 
-	## Step 1.b: Collect VB Filename 
-	##VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
-	#if args.vb_v_filename is not None and args.vb_h_filename is not None:
-	#	vb_v_filename = args.vb_v_filename
-	#	vb_h_filename = args.vb_h_filename
-	#	VB_filenames = (vb_v_filename, vb_h_filename)
-	#else:
-	#	# TODO generate vb_v and vb_h (use focused_Venbla_xy_to_off.py if no input filenames provided)
-	#	print('option currently unavailable')
-
-	# Step 1.c: Create config_list
+	# Step 1.b: Create config_list
 	# Baseline configuration
 	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
 	print(baseline_config)
@@ -68,7 +58,7 @@ if __name__ == "__main__":
 	VB_pos_vals = [8, 10, 15]		# VB pos is tied to geometry file though focusing
 	VB_length_vals = [0.3, 0.5]		# VB length is tied to geometry file 
 	VB_m_vals = [3, 4]
-	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file (TODO unless geometry is generated again)
+	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file
 	Det_pos_x_vals = [-0.3]			# Det pos value is tied to geometry file through focusing
 	Det_pos_y_vals = [-0.1]
 
@@ -105,7 +95,7 @@ if __name__ == "__main__":
 		VB_pos, VB_length, VB_m, VB_thickness, det_pos_x, det_pos_y = config
 
 		# Generate VB Given configuration
-		VB_filenames = get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, (det_pos_x, det_pos_y), 65, output_dir, image_dir, noShow=noShow) 
+		VB_filenames = get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, (det_pos_x, det_pos_y), 55, output_dir, image_dir, noShow=noShow) 
 
 		# Run simulation with config
 		yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (det_pos_x, det_pos_y), VB_filenames, output_dir, with_VB=True)
