@@ -40,7 +40,8 @@ def plot_results(*image_data_list, plot_type='full', save_image=None, xlims=None
 			x = np.linspace(extent[0], extent[1], np.size(cross_section))
 			plt.errorbar(x, cross_section, err_cross_section, capsize=2, label=f'{component}')
 			plt.xlabel(dataHeader['xlabel'])
-			plt.ylabel('Intensity [n/s]/ '+"{:.2e}".format(dx)+' ['+unit[0]+']')
+			plt.ylabel('$n T^2$ [$n s^2$]/ '+"{:.2e}".format(dx)+' ['+unit[0]+']')
+			#plt.ylabel('Intensity [n/s]/ '+"{:.2e}".format(dx)+' ['+unit[0]+']')
 			plt.title("X Cross-Section: "+title)
 
 		elif plot_type == "y":
@@ -60,7 +61,8 @@ def plot_results(*image_data_list, plot_type='full', save_image=None, xlims=None
 			plt.errorbar(y, cross_section, err_cross_section, capsize=2, label=f'{component}')
 			plt.xlim(extent[2], extent[3])
 			plt.xlabel(dataHeader['ylabel'])
-			plt.ylabel('Intensity [n/s]/ '+"{:.2e}".format(dx)+' ['+unit[0]+']')
+			plt.ylabel('$n T^2$ [$n s^2$]/ '+"{:.2e}".format(dx)+' ['+unit[0]+']')
+			#plt.ylabel('Intensity [n/s]/ '+"{:.2e}".format(dx)+' ['+unit[0]+']')
 			plt.title("Y Cross-Section: "+title)
 
 		elif plot_type == "full":
@@ -71,8 +73,9 @@ def plot_results(*image_data_list, plot_type='full', save_image=None, xlims=None
 			dy = (extent[3] - extent[2]) / (image.shape[0] - 1)
 
 			#plt.imshow(image, extent=extent, cmap='plasma', norm='log')
-			plt.imshow(np.flipud(image), extent=extent, cmap='plasma', norm='log')
-			plt.colorbar().set_label('Intensity [n/s]/ '+"{:.2e}".format(dx*dy)+' ['+unit1[0]+'*'+unit2[0]+']')
+			plt.imshow(np.flipud(image), extent=extent, cmap='plasma', norm='log', vmin=1, vmax=1e6)
+			plt.colorbar().set_label('$n T^2$ [$n s^2$]/ '+"{:.2e}".format(dx*dy)+' ['+unit1[0]+'*'+unit2[0]+']')
+			#plt.colorbar().set_label('Intensity [n/s]/ '+"{:.2e}".format(dx*dy)+' ['+unit1[0]+'*'+unit2[0]+']')
 			plt.xlabel(dataHeader['xlabel'])
 			plt.ylabel(dataHeader['ylabel'])
 			plt.title(title, pad=10)
@@ -126,12 +129,13 @@ def count_results(image_data, square=None, circle=None, noShow=False, save_image
 
 	# Show plot
 	fig, ax = plt.subplots()
-	img = ax.imshow(np.flipud(image), extent=extent, cmap='plasma')
+	img = ax.imshow(np.flipud(image), extent=extent, cmap='plasma', vmin=1, vmax=1e6)
 	ax.set_title(f"{dataHeader['component']}; ({dataHeader['position']})m")
 	ax.set_xlabel(dataHeader['xlabel'])
 	ax.set_ylabel(dataHeader['ylabel'])
 	cbar = fig.colorbar(img, ax=ax)
-	cbar.set_label(dataHeader['zvar'] + '/ ' + "{:.2e}".format(dx * dy) + ' [' + unit1[0] + '*' + unit2[0] + ']')
+	cbar.set_label('$n T^2$ [$n s^2$]/ ' + "{:.2e}".format(dx * dy) + ' [' + unit1[0] + '*' + unit2[0] + ']')
+	#cbar.set_label(dataHeader['zvar'] + '/ ' + "{:.2e}".format(dx * dy) + ' [' + unit1[0] + '*' + unit2[0] + ']')
 
 	if square:
 		square = Rectangle((x0, y0), (x1 - x0), (y1 - y0), fill=False, color='red', linewidth=2)

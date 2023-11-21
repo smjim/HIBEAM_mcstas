@@ -33,24 +33,31 @@ def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, wi
 	# if with_VB = True, then run with generated VB
 	if with_VB:
 		# const params: VB_pos, VB_length, VB_m 
-		print(colors.GREEN + f'==== Running with VB ====\n==== VB_pos:{VB_pos}, VB_length:{VB_length}, VB_m:{VB_m}, det_pos:({det_x}, {det_y}), VB_filenames:{VB_filenames} ====' + colors.ENDC)
+		print(colors.BLUE + f'==== Running with VB ====\n==== VB_pos:{VB_pos}, VB_length:{VB_length}, VB_m:{VB_m}, det_pos:({det_x}, {det_y}), VB_filenames:{VB_filenames} ====' + colors.ENDC)
 		
 		hash_value = generate_hash(n, VB_pos, VB_length, VB_m, det_x, det_y, VB_filenames)
 		
 		filename = "{}run_{}".format(output_dir, hash_value)
-		print(colors.YELLOW + "\nrunning command:\nmcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={} V_r_VB_filename={} H_r_VB_filename={}".format(mpi, instr, filename, n, VB_pos, VB_length, VB_m, det_x, det_y, v_reflecting_VB_geometry, h_reflecting_VB_geometry) + colors.ENDC + '\n')
-		os.system("mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={} V_r_VB_filename={} H_r_VB_filename={}".format(mpi, instr, filename, n, VB_pos, VB_length, VB_m, det_x, det_y, v_reflecting_VB_geometry, h_reflecting_VB_geometry))
+		command = "mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={} V_r_VB_filename={} H_r_VB_filename={}".format(mpi, instr, filename, n, VB_pos, VB_length, VB_m, det_x, det_y, v_reflecting_VB_geometry, h_reflecting_VB_geometry)
 
 	# if with_VB = False, then run without VB
 	else:
 		# const params: VB_pos, VB_length, VB_m 
-		print(colors.GREEN + f'==== Running with no VB ====\n==== VB_pos:{VB_pos}, VB_length:{VB_length}, VB_m:{VB_m}, det_pos:({det_x}, {det_y}) ====' + colors.ENDC)
+		print(colors.BLUE + f'==== Running with no VB ====\n==== VB_pos:{VB_pos}, VB_length:{VB_length}, VB_m:{VB_m}, det_pos:({det_x}, {det_y}) ====' + colors.ENDC)
 		
 		hash_value = generate_hash(n, VB_pos, VB_length, det_x, det_y)
 		
 		filename = "{}run_{}".format(output_dir, hash_value)
-		print(colors.YELLOW + "\nrunning command:\nmcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={}".format(mpi, instr_no_vb, filename, n, VB_pos, VB_length, VB_m, det_x, det_y) + colors.ENDC + '\n')
-		os.system("mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={}".format(mpi, instr_no_vb, filename, n, VB_pos, VB_length, VB_m, det_x, det_y))
+		command = "mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={}".format(mpi, instr_no_vb, filename, n, VB_pos, VB_length, VB_m, det_x, det_y)
+
+	# Redirect output to /dev/null (Unix-based) or NUL (Windows)
+	print('redirecting output')
+	if os.name == "posix":  # Unix-based system (e.g., Linux, macOS)
+		command += " > /dev/null 2>&1"
+	elif os.name == "nt":   # Windows system
+		command += " > NUL 2>&1"
+	print(colors.YELLOW + "\nrunning command:\n" + command + colors.ENDC + '\n')
+	os.system(command)
 
 	return filename
 
@@ -242,7 +249,6 @@ def output_to_image_data(inFile):
 	I, sigI, N, dataHeader, L = mc.extractMcStasData(inFile)
 	# From image, extract numpy array 
 	if dataHeader['type'][:8]=="array_2d":
-		print(dataHeader)
 		extent = np.array(dataHeader['xylimits'].split(),dtype=float)
 	
 		# Call the mcstas2TIFF function to generate .tif files
