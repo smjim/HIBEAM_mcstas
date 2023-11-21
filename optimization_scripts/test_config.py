@@ -4,6 +4,7 @@ import numpy as np
 from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan, colors
 from plot_vb import plot_results, show_instr, count_results
 from generate_VB import generate_VB_point_focused, generate_VB_bladeFocused, write_VB
+from focused_Venbla_xy_to_off import get_focused_blade_array
 
 import csv
 
@@ -15,11 +16,9 @@ if __name__ == "__main__":
 	parser.add_argument("output_dir", help="Output directory for calculations and image figures")
 	parser.add_argument('--vb_v_filename', metavar='vb_v_filename', help='if provided, use pre-generated vertically reflecting venetian blinds filename')
 	parser.add_argument('--vb_h_filename', metavar='vb_h_filename', help='if provided, use pre-generated horizontally reflecting venetian blinds filename')
-	parser.add_argument('--source_pos_interpolate', metavar='source_pos_file', help='if provided, interpolate blade source position from provided datapoints.')
+	parser.add_argument('--source_pos_interpolate', metavar='source_pos_file', help='if provided, interpolate blade source position from provided datapoints. *only works for a single input file, => only a single VB_pos')
 	parser.add_argument('--detdim', nargs=2, type=float, metavar=('detwidth', 'detheight'),
 					help='width and height of detector')
-	parser.add_argument('--detpos', nargs=2, type=float, metavar=('detx', 'dety'),
-					help='displacement of detector position')
 	parser.add_argument('--noShow', action='store_true', help='Show generated figures during calculations')
 
 	# --------------------------------
@@ -50,42 +49,40 @@ if __name__ == "__main__":
 	n = 1e6
 	VB_filenames = [None, None]
 
-	# Step 1.b: Collect VB Filename 
-	#VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
-	if args.vb_v_filename is not None and args.vb_h_filename is not None:
-		vb_v_filename = args.vb_v_filename
-		vb_h_filename = args.vb_h_filename
-		VB_filenames = (vb_v_filename, vb_h_filename)
-	else:
-		# TODO generate vb_v and vb_h (use focused_Venbla_xy_to_off.py if no input filenames provided)
-		print('option currently unavailable')
+	## Step 1.b: Collect VB Filename 
+	##VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
+	#if args.vb_v_filename is not None and args.vb_h_filename is not None:
+	#	vb_v_filename = args.vb_v_filename
+	#	vb_h_filename = args.vb_h_filename
+	#	VB_filenames = (vb_v_filename, vb_h_filename)
+	#else:
+	#	# TODO generate vb_v and vb_h (use focused_Venbla_xy_to_off.py if no input filenames provided)
+	#	print('option currently unavailable')
 
 	# Step 1.c: Create config_list
 	# Baseline configuration
-	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005, VB_filenames] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
+	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
 	print(baseline_config)
 
 	# Parameter options
-	VB_pos_vals = [8, 10, 15]
-	VB_length_vals = [0.3, 0.5]
+	VB_pos_vals = [8, 10, 15]		# VB pos is tied to geometry file though focusing
+	VB_length_vals = [0.3, 0.5]		# VB length is tied to geometry file 
 	VB_m_vals = [3, 4]
 	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file (TODO unless geometry is generated again)
-	Det_pos_x_vals = [-0.3]
+	Det_pos_x_vals = [-0.3]			# Det pos value is tied to geometry file through focusing
 	Det_pos_y_vals = [-0.1]
-	VB_vr_filenames_vals = [VB_filenames[0]]
-	VB_hr_filenames_vals = [VB_filenames[1]]
 
 	# all combinations of configs above 
-	grid_array1, grid_array2, grid_array3, grid_array4, grid_array5, grid_array6, grid_array7, grid_array8 = np.meshgrid(VB_pos_vals, VB_length_vals, VB_m_vals, VB_thickness_vals, Det_pos_x_vals, Det_pos_y_vals, VB_vr_filenames_vals, VB_hr_filenames_vals)
-	config_list = np.vstack((grid_array1.ravel(), grid_array2.ravel(), grid_array3.ravel(), grid_array4.ravel(), grid_array5.ravel(), grid_array6.ravel(), grid_array7.ravel(), grid_array8.ravel())).T
-	print(config_list[:,:6])
+	grid_array1, grid_array2, grid_array3, grid_array4, grid_array5, grid_array6 = np.meshgrid(VB_pos_vals, VB_length_vals, VB_m_vals, VB_thickness_vals, Det_pos_x_vals, Det_pos_y_vals)
+	config_list = np.vstack((grid_array1.ravel(), grid_array2.ravel(), grid_array3.ravel(), grid_array4.ravel(), grid_array5.ravel(), grid_array6.ravel())).T
+	print(config_list)
 
 	# --------------------------------
 	# Step 2: Run configurations and save output 
 	# --------------------------------
 
 	# Step 2.a: Run baseline (without VB)
-	no_VB_outDir = run_hibeam(n, baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[3], baseline_config[5], output_dir, with_VB=False)
+	no_VB_outDir = run_hibeam(n, baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[3], ("-", "-"), output_dir, with_VB=False)
 
 	vertical_image_data = output_to_image_data("{}/v_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
 	horizontal_image_data = output_to_image_data("{}/h_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
@@ -104,10 +101,14 @@ if __name__ == "__main__":
 	# Step 2.b: Run configurations
 	n = 1e6
 	for i, config in enumerate(config_list):
-		VB_pos, VB_length, VB_m, VB_thickness, det_pos_x, det_pos_y, VB_vr_filename , VB_hr_filename = config
-		#print(f'===== VB_pos: {VB_pos}, VB_length: {VB_length}, VB_m: {VB_m}, VB_thickness: {VB_thickness}, det_pos: {det_pos_x, det_pos_y} =====')
-		#print(f'===== VB_filenames: {VB_vr_filename, VB_hr_filename} =====')
-		yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (det_pos_x, det_pos_y), (VB_vr_filename, VB_hr_filename), output_dir, with_VB=True)
+		# Unpack config
+		VB_pos, VB_length, VB_m, VB_thickness, det_pos_x, det_pos_y = config
+
+		# Generate VB Given configuration
+		VB_filenames = get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, (det_pos_x, det_pos_y), 65, output_dir, image_dir, noShow=noShow) 
+
+		# Run simulation with config
+		yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (det_pos_x, det_pos_y), VB_filenames, output_dir, with_VB=True)
 	
 		# Capture image from output
 		target_image_data = output_to_image_data("{}/psdt2_large.dat".format(yes_VB_outDir))
@@ -119,7 +120,7 @@ if __name__ == "__main__":
 		print(colors.GREEN + f'\nEstimated improvement: {ratio} ± {ratio_err}\n' + colors.ENDC)
 
 		# Write output to file
-		line = [VB_pos, VB_length, VB_m, det_pos_x, det_pos_y, VB_vr_filename, VB_hr_filename]
+		line = [VB_pos, VB_length, VB_m, det_pos_x, det_pos_y, VB_filenames[0], VB_filenames[1]]
 		line.extend([ratio, ratio_err])
 		with open(summary_file, 'a', newline='') as file:
 			writer = csv.writer(file)

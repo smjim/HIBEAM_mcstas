@@ -22,9 +22,10 @@ def generate_hash(*parameters):
 	return hash_value
 
 # run simulation with params
-def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB):
+def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB, dead_monolith=False):
 	instr = "target40cm_off.instr"
 	instr_no_vb = "target40cm_off_no_vb.instr"
+	instr_no_vb_dead_monolith = "target40cm_off_no_vb_dead_monolith.instr"
 	mpi = 1
 
 	det_x, det_y = det_pos
@@ -39,6 +40,8 @@ def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, wi
 		
 		filename = "{}run_{}".format(output_dir, hash_value)
 		command = "mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={} V_r_VB_filename={} H_r_VB_filename={}".format(mpi, instr, filename, n, VB_pos, VB_length, VB_m, det_x, det_y, v_reflecting_VB_geometry, h_reflecting_VB_geometry)
+		if dead_monolith:
+			print('with VB, dead monolith Option currently not supported')
 
 	# if with_VB = False, then run without VB
 	else:
@@ -49,6 +52,8 @@ def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, wi
 		
 		filename = "{}run_{}".format(output_dir, hash_value)
 		command = "mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={}".format(mpi, instr_no_vb, filename, n, VB_pos, VB_length, VB_m, det_x, det_y)
+		if dead_monolith:
+			command = "mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={}".format(mpi, instr_no_vb_dead_monolith, filename, n, VB_pos, VB_length, VB_m, det_x, det_y)
 
 	# Redirect output to /dev/null (Unix-based) or NUL (Windows)
 	print('redirecting output')
@@ -384,3 +389,82 @@ def analyze_image(image_data):
 	#ymin, ymax = calculate_fwhm(y, cross_section)
 
 	return xmin, xmax, ymin, ymax 
+
+# Scan x blades to find optimal source positions, save to file
+# Backpropagate from blade position and return optimal source position for that point
+def source_interpolation(zvb, hx, hy, length, num_gridpoints, outDir, vb_summary_file):
+	# Write header to outFile
+	with open(vb_summary_file, 'a', newline='') as file:
+		writer = csv.writer(file)
+		writer.writerow(['# blade x pos [cm]','blade optimal source x pos [cm]'])
+
+	# For given blade, find optimal source position
+	def blade_optimal_pos(x): # written with vertical convention
+		# Find y extent for blade selection
+		xmin = (zvb * x)/ (zvb + length/2)
+		xmax = (zvb * x)/ (zvb - length/2)
+		if xmax < xmin: # make sure xmin < xmax
+			tmp = xmax
+			xmax = xmin
+			xmin = tmp
+
+		# Generate image of what is being backpropagated
+		h_r_VB_blade_file = f'{outDir}/h_r_VB_histogram_{x}_{zvb-0.001}.dat'
+		os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {h_r_VB_blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
+		## Plot what is being backpropagated
+		h_r_VB_blade_image_data = output_to_image_data(h_r_VB_blade_file)
+		#plot_results(h_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}08_h_r_VB_blade_{i}_image.pdf', noShow=noShow)
+
+		# Backpropagate from selected blade
+		h_r_VB_back_file = f'{outDir}/histogram_x_scan_{i:03d}.dat'
+		backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/h_r_VB_output.dat {h_r_VB_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
+		print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
+		os.system(backprop_command)
+
+		## Plot result of backpropagation
+		h_r_VB_back_image_data = output_to_image_data(h_r_VB_back_file)
+		#plot_results(h_r_VB_back_image_data, plot_type='full', save_image=f'{imageDir}09_h_r_VB_back_{i}_image.pdf', noShow=noShow)
+		#plot_results(h_r_VB_back_image_data, plot_type='x', save_image=f'{imageDir}10_h_r_VB_back_x_{i}_image.pdf', noShow=noShow)
+
+		# Write to top of h_r_VB_back_file header info containing x position (for plotting later)
+		x_pos_info = f'# blade_xpos: {x}'
+		# Read the original content of the file
+		with open(h_r_VB_back_file, 'r') as file:
+			original_content = file.read()
+
+		# Write the given string to the file
+		with open(h_r_VB_back_file, 'w') as file:
+			file.write(x_pos_info + '\n')  # Write the string to the top line
+			file.write(original_content)  # Write the original content below the string
+
+		# Find peak of backpropagated distribution, store in hxz0
+		xsrc = find_image_weighted_average(h_r_VB_back_image_data, 'x')
+
+		return xsrc
+
+	# --------------------------------
+	# find horizontal blade optimal source positions
+
+	# Convert .mcpl to .txt
+	mcpltool_command = f"mcpltool -t {outDir}/h_r_VB_output.mcpl.gz {outDir}/h_r_VB_output.dat"
+	#mcpltool_command = f"mcpltool -t {outDir}/h_r_VB_output.mcpl {outDir}/h_r_VB_output.dat"
+	print(colors.YELLOW + f"\nrunning command:\n{mcpltool_command}" + colors.ENDC + '\n')
+	os.system(mcpltool_command)
+
+	x_vals = np.linspace(hx[0], hx[3], num_gridpoints)
+
+	# For each blade position, backpropagate only neutrons at that position
+	for i, x in enumerate(x_vals):
+		print(colors.BLUE + f'interpolating blade {i:03d} at x={x}' + colors.ENDC)
+		xz0 = blade_optimal_pos(x)
+		#print(f'blade {i:03d} at x={x} has hxz0={xz0}')
+
+		# Write output to outFile
+		with open(vb_summary_file, 'a', newline='') as file:
+			writer = csv.writer(file, delimiter=' ')
+			writer.writerow([x, xz0])
+
+
+	# Remove 'h_r_VB_output.dat' to reduce storage requirements
+	os.remove(f"{outDir}/h_r_VB_output.dat")
+
