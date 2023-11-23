@@ -1,0 +1,19 @@
+# Automatic output logs
+*.pdf
+
+# Venbla geometry incarnations
+Venbla_*
+
+# Generated instrument binaries
+*.out
+*.c
+
+# Temporary files
+tmp*
+
+# mcpl data
+*.mcpl*
+
+# old stuff
+hibeam_old.instr
+monolith_guide_old.off
