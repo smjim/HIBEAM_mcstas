@@ -19,3 +19,5 @@ tmp*
 old_files/
 hibeam_old.instr
 monolith_guide_old.off
+hibeam/hibeam_no_monolith.instr
+hibeam/hibeam_pos_monitor.instr

@@ -242,7 +242,7 @@ AT (-0.0,-0.0,59.5003) RELATIVE BPCS
 COMPONENT PSDT2_monitor_detector = PSDT2_monitor(
  xmin = -1.50, xmax = 1.50,
  ymin = -1.50, ymax = 1.50,
-nx=150, ny=150, filename="psdt2_detector.dat")
+nx=150, ny=150, filename="psdt2_large.dat")
 AT (-0.0,-0.0,59.5004) RELATIVE BPCS
 
 

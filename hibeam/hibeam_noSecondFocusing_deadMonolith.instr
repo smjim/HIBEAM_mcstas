@@ -28,7 +28,12 @@
 DEFINE INSTRUMENT hibeam (
 double target_cp = 65,
 double target_x = 0.0,
-double target_y = 0.0
+double target_y = 0.0,
+double VB_pos=15,
+double VB_length=0.3,
+double VB_m=4,
+string V_r_VB_filename="Venbla_vertically_reflecting_geometry.off",
+string H_r_VB_filename="Venbla_horizontally_reflecting_geometry.off"
 )
 
 DECLARE 
@@ -87,8 +92,9 @@ COMPONENT monolith_guide_entrance_slit = Slit(
  ymin = -0.05293559, ymax = 0.0248676)
 AT (0.0,0.0,-3.497) RELATIVE BPCS
 
+// Dead monolith guide absorbs neutrons (m=0)
 COMPONENT asym_monolith_guide = Guide_anyshape(
- m = 4, geometry = "monolith_guide.off")
+ m = 0, geometry = "monolith_guide.off")
 AT (0.0,0.0,-3.497) RELATIVE BPCS
 EXTEND %{
 if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
@@ -102,34 +108,94 @@ COMPONENT monolith_guide_solid_angle_exit_bottom = Shape(
  geometry = "monolith_guide_solid_angle_exit_bottom.off", center = 0)
 AT (0,0,0) ABSOLUTE
 
+// Reset TOF After monolith guide
 COMPONENT PSD_monitor_exit_monolith_guide = PSD_monitor(
  xmin = -0.0933276, xmax = 0.0933276,
  ymin = -0.101513, ymax = 0.035)
 AT (0.0,0.0,-0.017) RELATIVE BPCS
-
-/* START OF SECOND ELLIPTICAL GUIDE */
-
-COMPONENT guide2_start = Arm()
-AT (0.0,-0.10,0.6) RELATIVE BPCS
-
-COMPONENT second_guide = Guide_anyshape(
- m = 4, geometry = "second_guide.off")
-AT (0.0,0.0,1E-6) RELATIVE guide2_start
-EXTEND %{
-if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
-%}
-
-// reset TOF after second elliptical guide
-COMPONENT exit_long_monolith_guide = PSD_monitor(
- xmin = -1.0, xmax = 1.0,
- ymin = -1.0, ymax = 1.0)
-AT (0.0,0.0,20) RELATIVE guide2_start
 EXTEND %{
 trackid_and_nscatter=(double)mcget_run_num();
 t=0;
 %}
 
-/* END OF SECOND ELLIPTICAL GUIDE */
+/* START OF VENETIAN BLINDS */
+
+COMPONENT HIBEAM_Venbla_Coordinate_System = Arm()
+ AT (0.0,0.0,VB_pos-5.5) RELATIVE BPCS_Rotated
+ ROTATED (0, 0, 0) RELATIVE BPCS_Rotated
+
+COMPONENT VB_monitor_entrance = PSD_monitor(
+    nx=100,
+    ny=100,
+    filename="VB_pos_image_entrance.dat",
+    xwidth=1.0,
+    yheight=1.0)
+AT (0, 0, -0.5*VB_length) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+// Vertically Reflecting Venetian Blinds
+/*
+COMPONENT V_Reflecting_Venbla = Guide_anyshape(
+ m=VB_m,
+ geometry=V_r_VB_filename)
+AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System
+EXTEND %{
+if (SCATTERED) {t = 0.0; };
+%}
+*/
+
+COMPONENT v_reflecting_VB_monitor_midpoint = PSD_monitor(
+    nx=100,
+    ny=100,
+    filename="v_reflecting_VB_pos_image_midpoint.dat",
+    xwidth=1.0,
+    yheight=1.0)
+AT (0, 0, 0) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+COMPONENT v_r_VB_mcpl_output = MCPL_output(
+    filename="v_r_VB_output.mcpl")
+AT (0, 0, 0) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+COMPONENT VB_monitor_midpoint = PSD_monitor(
+    nx=100,
+    ny=100,
+    filename="VB_pos_image_midpoint.dat",
+    xwidth=1.0,
+    yheight=1.0)
+AT (0, 0, (0.5*VB_length)+0.005) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+COMPONENT TOF2_monitor_midpoint = PSDT2_monitor(
+    xmin=-0.5, xmax=0.5,
+    ymin=-0.5, ymax=0.5,
+    nx=100, ny=100,
+    filename="TOF2_monitor_midpoint.dat")
+AT (0, 0, (0.5*VB_length)+0.005) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+// Horizontally Reflecting Venetian Blinds
+/*
+COMPONENT H_Reflecting_Venbla = Guide_anyshape(
+ m=VB_m,
+ geometry=H_r_VB_filename)
+AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
+ROTATED (0.0, 0.0, 90) RELATIVE HIBEAM_Venbla_Coordinate_System
+EXTEND %{
+if (SCATTERED) {t = 0.0; };
+%}
+*/
+
+COMPONENT h_reflecting_VB_monitor_midpoint = PSD_monitor(
+    nx=100,
+    ny=100,
+    filename="h_reflecting_VB_pos_image_midpoint.dat",
+    xwidth=1.0,
+    yheight=1.0)
+AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+COMPONENT h_r_VB_mcpl_output = MCPL_output(
+    filename="h_r_VB_output.mcpl")
+AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+/* END OF VENETIAN BLINDS */
+
 
 COMPONENT bunker_wall = Shape(
  radius = 15, yheight = 2,

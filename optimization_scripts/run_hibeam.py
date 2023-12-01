@@ -23,9 +23,9 @@ def generate_hash(*parameters):
 
 # run simulation with params
 def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB, dead_monolith=False):
-	instr = "target40cm_off.instr"
-	instr_no_vb = "target40cm_off_no_vb.instr"
-	instr_no_vb_dead_monolith = "target40cm_off_no_vb_dead_monolith.instr"
+	instr = "hibeam/hibeam_VB.instr"
+	instr_no_vb = "hibeam/hibeam_noSecondFocusing.instr"
+	instr_no_vb_dead_monolith = "hibeam/hibeam_noSecondFocusing_deadMonolith.instr"
 	mpi = 1
 
 	det_x, det_y = det_pos
