@@ -3,6 +3,7 @@
 
 # Venbla geometry incarnations
 Venbla_*
+Venbla/
 
 # Generated instrument binaries
 *.out
