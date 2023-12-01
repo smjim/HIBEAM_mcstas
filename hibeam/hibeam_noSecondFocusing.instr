@@ -1,0 +1,176 @@
+/********************************************************************************
+* 
+* McStas, neutron ray-tracing package
+*         Copyright (C) 1997-2008, All rights reserved
+*         Risoe National Laboratory, Roskilde, Denmark
+*         Institut Laue Langevin, Grenoble, France
+* 
+* This file was written by McStasScript, which is a 
+* python based McStas instrument generator written by 
+* Mads Bertelsen in 2019 while employed at the 
+* European Spallation Source Data Management and 
+* Software Centre
+* 
+* Instrument hibeam
+* 
+* %Identification
+* Written by: Python McStas Instrument Generator
+* Date: 15:25:30 on August 15, 2023
+* Origin: ESS DMSC
+* %INSTRUMENT_SITE: Generated_instruments
+* 
+* 
+* %Parameters
+* 
+* %End 
+********************************************************************************/
+
+DEFINE INSTRUMENT hibeam (
+double target_cp = 65,
+double target_x = 0.0,
+double target_y = 0.0
+)
+
+DECLARE 
+%{
+double target_angle;
+%}
+
+USERVARS 
+%{
+double trackid_and_nscatter; // Neutron track ID (first 30 bits of MCPL userflag) and number of scattering events (last 2 bits of MCPL userflag)
+%}
+
+INITIALIZE 
+%{
+target_angle = (180/3.14159265359) * atan(target_x/ (target_cp-5.390744651928291));
+fprintf(stderr,"target angle: %f\n", target_angle);
+%}
+
+TRACE 
+COMPONENT progressbar = Progress_bar()
+AT (0,0,0) ABSOLUTE
+
+COMPONENT Source = ESS_butterfly(
+ sector = "E", beamline = 6,
+ cold_frac = 0.7, dist = 1.89074,
+ focus_xw = 0.114, focus_yh = 0.124,
+ Lmin = 0.1, Lmax = 20,
+ n_pulses = 1, acc_power = 2)
+AT (0,0,0) ABSOLUTE
+EXTEND %{
+trackid_and_nscatter=(double)mcget_run_num();
+t=0;
+%}
+
+// Exit of monolith guide
+COMPONENT BPCS = Arm()
+AT (0.0,0.0,5.390744651928291) RELATIVE Source
+
+COMPONENT BPCS_Rotated = Arm()
+ AT (0.0,0.0,0.0) RELATIVE BPCS
+ ROTATED (0, target_angle, 0) RELATIVE BPCS
+
+COMPONENT nboa_engineering_constraints = Shape(
+ geometry = "nboa_engineering_constraints.off")
+AT (0.0,-0.055,-1.757) RELATIVE BPCS
+
+COMPONENT L_monitor_entry = L_monitor(
+ nL = 500, xmin = -0.057,
+ xmax = 0.057, ymin = -0.062,
+ ymax = 0.025, Lmin = 0.1,
+ Lmax = 20)
+AT (0.0,0,-3.497) RELATIVE BPCS
+
+COMPONENT monolith_guide_entrance_slit = Slit(
+ xmin = -0.0256303, xmax = 0.052,
+ ymin = -0.05293559, ymax = 0.0248676)
+AT (0.0,0.0,-3.497) RELATIVE BPCS
+
+COMPONENT asym_monolith_guide = Guide_anyshape(
+ m = 4, geometry = "monolith_guide.off")
+AT (0.0,0.0,-3.497) RELATIVE BPCS
+EXTEND %{
+if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
+%}
+
+COMPONENT monolith_guide_solid_angle_exit_top = Shape(
+ geometry = "monolith_guide_solid_angle_exit_top.off", center = 0)
+AT (0,0,0) ABSOLUTE
+
+COMPONENT monolith_guide_solid_angle_exit_bottom = Shape(
+ geometry = "monolith_guide_solid_angle_exit_bottom.off", center = 0)
+AT (0,0,0) ABSOLUTE
+
+// Rese TOF After monolith guide
+COMPONENT PSD_monitor_exit_monolith_guide = PSD_monitor(
+ xmin = -0.0933276, xmax = 0.0933276,
+ ymin = -0.101513, ymax = 0.035)
+AT (0.0,0.0,-0.017) RELATIVE BPCS
+EXTEND %{
+trackid_and_nscatter=(double)mcget_run_num();
+t=0;
+%}
+
+COMPONENT bunker_wall = Shape(
+ radius = 15, yheight = 2,
+ thickness = 3.5)
+AT (-0.004412486121389605,0.0,-0.10935734985006093) ABSOLUTE
+
+COMPONENT TOF = TOF_monitor(
+ nt = 100, filename = "TOF.dat",
+ tmin = 0, tmax = 328612)
+AT (0.0,0.0,59.5001) RELATIVE BPCS
+
+COMPONENT T2large = T2_monitor(
+ nt = 100, filename = "mon100cm.dat",
+ tmin = 0, tmax = 328612,
+ radius = 0.5)
+AT (-0.40,-0.50,59.5002) RELATIVE BPCS
+
+COMPONENT T2small = T2_monitor(
+ nt = 100, filename = "mon40cm.dat",
+ tmin = 0, tmax = 328612,
+ radius = 0.2)
+AT (-0.40,-0.50,59.5002) RELATIVE BPCS
+
+COMPONENT PSD_monitor_detector = PSD_monitor(
+ xmin = -1.50, xmax = 1.50,
+ ymin = -1.50, ymax = 1.50,
+nx=150, ny=150, filename="psd_detector.dat")
+AT (-0.0,-0.0,59.5003) RELATIVE BPCS
+
+COMPONENT PSDT2_monitor_detector = PSDT2_monitor(
+ xmin = -1.50, xmax = 1.50,
+ ymin = -1.50, ymax = 1.50,
+nx=150, ny=150, filename="psdt2_detector.dat")
+AT (-0.0,-0.0,59.5004) RELATIVE BPCS
+
+
+// Target Coordinate System for slit, mcpl output, and monitor for viewing
+COMPONENT Target_Coordinate_System = Arm()
+ AT (0.0,0.0,59.5005) RELATIVE BPCS 
+
+COMPONENT slit_target = Slit(
+    radius=0.20)
+AT (target_x, target_y, 1e-9) RELATIVE Target_Coordinate_System
+
+COMPONENT target_mcpl_output = MCPL_output(
+    filename="target_output.mcpl")
+AT (0, 0, 2e-9) RELATIVE Target_Coordinate_System
+
+COMPONENT psd_monitor_target_2 = PSD_monitor(
+    nx=200,
+    ny=200,
+    filename="collimated_target_image.dat",
+    xwidth=2.0,
+    yheight=2.0)
+AT (0, 0, 3e-9) RELATIVE Target_Coordinate_System
+
+
+FINALLY 
+%{
+// Start of finally for generated hibeam
+%}
+
+END
