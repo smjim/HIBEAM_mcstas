@@ -2,7 +2,7 @@
 import math
 import os
 import numpy as np
-from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan, source_interpolation
+from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan, source_interpolation, colors
 from plot_vb import plot_results, show_instr, count_results
 from generate_VB import generate_VB_point_focused, generate_VB_bladeFocused, write_VB
 
@@ -89,6 +89,8 @@ def get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, det_pos, zdet
 		else:
 			# Generate source pos file for hxz0 interpolation
 			source_interpolation(VB_pos, hx, hy, VB_length, num_gridpoints, no_VB_outDir, source_pos_file)
+	else:
+		source_pos_file = source_pos_interpolate
 
 	#VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, vyz0, hxz0) # VB with focus linearly interpolated between top and bottom of each blade array 
 	#VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
@@ -148,8 +150,27 @@ if __name__ == "__main__":
 	# --------------------------------
 	# Step 2: Run with generated VB and show output 
 	# --------------------------------
+	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
+	n = 1e6
 
-	# Step 2.a: Run with focused VB
+	# Step 2.a: Run baseline (without VB)
+	no_VB_outDir = run_hibeam(n, baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[3], ("-", "-"), output_dir, with_VB=False)
+
+	vertical_image_data = output_to_image_data("{}/v_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir))
+	horizontal_image_data = output_to_image_data("{}/h_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir))
+	target_image_no_vb_data = output_to_image_data("{}/psdt2_large.dat".format(no_VB_outDir))
+
+	# Plot results
+	plot_results(vertical_image_data, plot_type='full', save_image=f'{image_dir}00_vertically_reflecting_blades_image.pdf', noShow=noShow)
+	plot_results(horizontal_image_data, plot_type='full', save_image=f'{image_dir}01_horizontally_reflecting_blades_image.pdf', noShow=noShow)
+	plot_results(target_image_no_vb_data, plot_type='full', save_image=f'{image_dir}02_target_image_no_vb.pdf', noShow=noShow)
+
+	# Calculate baseline FoM
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
+	print(colors.GREEN + f'\nBaseline Calculation: {no_vb_sum} ± {no_vb_sum_err} nT^2/pulse\n' + colors.ENDC)
+	print(colors.GREEN + f'\nRatio: {1.00} ± {0.00}\n' + colors.ENDC)
+
+	# Step 2.b: Run with focused VB
 	n = 1e6
 	yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=True)
 
@@ -159,10 +180,7 @@ if __name__ == "__main__":
 	# Step 2.b: Show output images/ save to file  
 	n = 1e6
 	VB_filenames = [None, None]
-	no_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=False, dead_monolith=True) # Specify dead monolith to avoid touching monolith focused
-	target_image_no_vb_data = output_to_image_data("{}/psdt2_large.dat".format(no_VB_outDir)) 
 
-	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}04_target_no_vb.pdf', noShow=noShow)
 	vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}05_target_with_vb.pdf', noShow=noShow)
 	ratio = vb_sum/no_vb_sum
 	ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
