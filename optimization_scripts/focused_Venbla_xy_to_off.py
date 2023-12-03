@@ -2,7 +2,7 @@
 import math
 import os
 import numpy as np
-from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan, source_interpolation
+from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan, source_interpolation, source_y0
 from plot_vb import plot_results, show_instr, count_results
 from generate_VB import generate_VB_point_focused, generate_VB_bladeFocused, write_VB
 
@@ -12,7 +12,10 @@ def get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, det_pos, zdet
 	# --------------------------------
 	n = 1e6
 	VB_filenames = [None, None]
-	no_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=False, dead_monolith=True) # Specify dead monolith to avoid touching monolith focused
+	#no_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=False, dead_monolith=True, noShow=noShow) # Specify dead monolith to avoid touching monolith focused
+	no_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=False, dead_monolith=False, noShow=noShow) # Specify dead monolith to avoid touching monolith focused
+	# TODO fix lost efficiency
+	#no_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (0, 0), VB_filenames, output_dir, with_VB=False, dead_monolith=False, noShow=noShow) # Specify dead monolith to avoid touching monolith focused
 	vertical_image_data = output_to_image_data("{}/v_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
 	horizontal_image_data = output_to_image_data("{}/h_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
 	target_image_no_vb_data = output_to_image_data("{}/psdt2_large.dat".format(no_VB_outDir)) 
@@ -47,7 +50,6 @@ def get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, det_pos, zdet
 	# Find inner bounds by analyzing backpropagated images
 	vx1, vx2, vy1, vy2 = analyze_image(backprop_vertical_image_data)
 	hx1, hx2, hy1, hy2 = analyze_image(backprop_horizontal_image_data)
-
 	# Sanity check on target
 	back_target = run_backprop(no_VB_outDir, zdet-0.001)
 	target_image_data = output_to_image_data(back_target)
@@ -82,19 +84,29 @@ def get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, det_pos, zdet
 	# Step 3.b: Generate Venetian Blinds *assuming linear interpolation of optimal focus point 
 	if source_pos_interpolate is None:
 		num_gridpoints = 20
-		source_pos_file = f"{output_dir}hxz0_{VB_pos}_{VB_length}_{hx[0]}_{hx[3]}_{hy[0]}_{hy[3]}_{num_gridpoints}.dat"
-		if os.path.exists(source_pos_file):
-			print('source pos file exists!')
-			print(source_pos_file)
+		source_pos_file_x = f"{output_dir}hxz0_{VB_pos}_{VB_length}_{hx[0]}_{hx[3]}_{hy[0]}_{hy[3]}_{num_gridpoints}.dat"
+		if os.path.exists(source_pos_file_x):
+			print('source pos x file exists!')
+			print(source_pos_file_x)
 		else:
 			# Generate source pos file for hxz0 interpolation
-			source_interpolation(VB_pos, hx, hy, VB_length, num_gridpoints, no_VB_outDir, source_pos_file)
+			source_interpolation(VB_pos, hx, hy, VB_length, num_gridpoints, no_VB_outDir, source_pos_file_x)
+
+		source_pos_file_y = f"{output_dir}vyz0_{VB_pos}_{VB_length}_{vx[0]}_{vx[3]}_{vy[0]}_{vy[3]}_{num_gridpoints}.dat"
+		if os.path.exists(source_pos_file_y):
+			print('source pos file y exists!')
+			print(source_pos_file_y)
+		else:
+			# Generate source pos file for hxz0 interpolation
+			#source_interpolation(VB_pos, vx, vy, VB_length, num_gridpoints, no_VB_outDir, source_pos_file_y)
+			source_y0(vy, num_gridpoints, source_pos_file_y) # Define source optimal pos file explicitly given yz0 = 0
 
 	#VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, vyz0, hxz0) # VB with focus linearly interpolated between top and bottom of each blade array 
 	#VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
 	#VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
-	print(source_pos_file)
-	VB_filenames = generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file) # VB with focus interpolated from file with many source positions 
+	print(source_pos_file_x, source_pos_file_y)
+	VB_filenames = generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file_x, source_pos_file_y) # VB with focus interpolated from file with many source positions 
+	#VB_filenames = generate_VB_bladeFocused(VB_pos, zdet, (0, 0), VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file_x, source_pos_file_y) # VB with focus interpolated from file with many source positions 
 
 	return VB_filenames
 
@@ -151,7 +163,7 @@ if __name__ == "__main__":
 
 	# Step 2.a: Run with focused VB
 	n = 1e6
-	yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=True)
+	yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=True, noShow=noShow)
 
 	# Capture image from output
 	target_image_data = output_to_image_data("{}/psdt2_large.dat".format(yes_VB_outDir))
@@ -159,11 +171,11 @@ if __name__ == "__main__":
 	# Step 2.b: Show output images/ save to file  
 	n = 1e6
 	VB_filenames = [None, None]
-	no_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=False, dead_monolith=True) # Specify dead monolith to avoid touching monolith focused
+	no_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB=False, dead_monolith=True, noShow=noShow) # Specify dead monolith to avoid touching monolith focused
 	target_image_no_vb_data = output_to_image_data("{}/psdt2_large.dat".format(no_VB_outDir)) 
 
-	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}04_target_no_vb.pdf', noShow=noShow)
-	vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}05_target_with_vb.pdf', noShow=noShow)
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0], det_pos[1], 0.20], save_image=f'{image_dir}04_target_no_vb.pdf', noShow=noShow)
+	vb_sum, vb_sum_err = count_results(target_image_data, circle=[det_pos[0], det_pos[1], 0.20], save_image=f'{image_dir}05_target_with_vb.pdf', noShow=noShow)
 	ratio = vb_sum/no_vb_sum
 	ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
 	print(f'Estimated improvement: {ratio} ± {ratio_err}')

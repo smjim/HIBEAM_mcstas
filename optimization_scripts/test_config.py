@@ -33,14 +33,25 @@ if __name__ == "__main__":
 	if args.noShow:
 		noShow = True # Dont show figures, only generate them and store them in output directory
 
+	# Manually set VB filenames
+#	if args.vb_v_filename:
+#		VB_v_filename = args.vb_v_filename
+#	else:
+#		VB_v_filename = None
+#
+#	if args.vb_h_filename:
+#		VB_h_filename = args.vb_h_filename
+#	else: 
+#		VB_h_filename = None
+
 	# Step 0.b: Write output header
 	summary_file = "{}/output.csv".format(output_dir)
 	with open(summary_file, 'w', newline='') as file:
 		writer = csv.writer(file)
 
 		# write header
-		header = ['VB_pos', 'VB_length', 'VB_m', 'det_pos x', 'det_pos y', 'VB_filename v reflecting', 'VB_filename h reflecting'] # input variables
-		header.extend(['ratio', 'ratio_err'])	# tested outputs
+		header = ['VB_pos', 'VB_length', 'VB_m', 'VB_thickness', 'det_pos x', 'det_pos y', 'VB_filename v reflecting', 'VB_filename h reflecting'] # input variables
+		header.extend(['FoM within ROI', 'FoM err', 'ratio', 'ratio_err'])	# tested outputs
 		writer.writerow(header)
 
 	# --------------------------------
@@ -48,19 +59,21 @@ if __name__ == "__main__":
 	# --------------------------------
 	n = 1e6
 	VB_filenames = [None, None]
+	det_pos = [-0.43, -0.47]
 
 	# Step 1.b: Create config_list
 	# Baseline configuration
-	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
+	baseline_config = [10, 0.5, 4, (det_pos[0], det_pos[1]), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
 	print(baseline_config)
 
 	# Parameter options
-	VB_pos_vals = [8, 10, 15]		# VB pos is tied to geometry file though focusing
-	VB_length_vals = [0.3, 0.5]		# VB length is tied to geometry file 
-	VB_m_vals = [3, 4]
-	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file
-	Det_pos_x_vals = [-0.3]			# Det pos value is tied to geometry file through focusing
-	Det_pos_y_vals = [-0.1]
+	VB_pos_vals = [10] #[8, 10, 15]		# VB pos is tied to geometry file though focusing
+	VB_length_vals = [0.5] #[0.3, 0.5]		# VB length is tied to geometry file 
+	VB_m_vals = [0] #[3, 4]
+	VB_thickness_vals = [0.00025] #[0.0005]	# VB thickness is tied to geometry file
+	Det_pos_x_vals = [0]			# Det pos value is tied to geometry file through focusing
+	#Det_pos_x_vals = [det_pos[0]]			# Det pos value is tied to geometry file through focusing
+	Det_pos_y_vals = [det_pos[1]]
 
 	# all combinations of configs above 
 	grid_array1, grid_array2, grid_array3, grid_array4, grid_array5, grid_array6 = np.meshgrid(VB_pos_vals, VB_length_vals, VB_m_vals, VB_thickness_vals, Det_pos_x_vals, Det_pos_y_vals)
@@ -72,7 +85,7 @@ if __name__ == "__main__":
 	# --------------------------------
 
 	# Step 2.a: Run baseline (without VB)
-	no_VB_outDir = run_hibeam(n, baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[3], ("-", "-"), output_dir, with_VB=False)
+	no_VB_outDir = run_hibeam(n, baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[3], ("-", "-"), output_dir, with_VB=False, noShow=noShow)
 
 	vertical_image_data = output_to_image_data("{}/v_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
 	horizontal_image_data = output_to_image_data("{}/h_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
@@ -84,9 +97,17 @@ if __name__ == "__main__":
 	plot_results(target_image_no_vb_data, plot_type='full', save_image=f'{image_dir}02_target_image_no_vb.pdf', noShow=noShow)
 
 	# Calculate baseline FoM
-	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
+	print(det_pos)
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0], det_pos[1], 0.20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
 	print(colors.GREEN + f'\nBaseline Calculation: {no_vb_sum} ± {no_vb_sum_err} nT^2/pulse\n' + colors.ENDC)
 	print(colors.GREEN + f'\nRatio: {1.00} ± {0.00}\n' + colors.ENDC)
+	# Write baseline output to file
+	line = ['-', '-', '-', '-', det_pos[0], det_pos[1], 'no vb', 'no vb']
+	line.extend([no_vb_sum, no_vb_sum_err, 1.00, '--'])
+	with open(summary_file, 'a', newline='') as file:
+		writer = csv.writer(file)
+		writer.writerow(line)
+
 
 	# Step 2.b: Run configurations
 	n = 1e6
@@ -96,22 +117,23 @@ if __name__ == "__main__":
 
 		# Generate VB Given configuration
 		VB_filenames = get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, (det_pos_x, det_pos_y), 55, output_dir, image_dir, noShow=noShow) 
+		#VB_filenames = [VB_v_filename, VB_h_filename] #get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, (det_pos_x, det_pos_y), 55, output_dir, image_dir, noShow=noShow) 
 
 		# Run simulation with config
-		yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (det_pos_x, det_pos_y), VB_filenames, output_dir, with_VB=True)
+		yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (det_pos_x, det_pos_y), VB_filenames, output_dir, with_VB=True, noShow=noShow)
 	
 		# Capture image from output
 		target_image_data = output_to_image_data("{}/psdt2_large.dat".format(yes_VB_outDir))
 	
 		# Show output images/ save to file  
-		vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
+		vb_sum, vb_sum_err = count_results(target_image_data, circle=[det_pos[0], det_pos[1], 0.20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
 		ratio = vb_sum/no_vb_sum
 		ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
 		print(colors.GREEN + f'\nEstimated improvement: {ratio} ± {ratio_err}\n' + colors.ENDC)
 
 		# Write output to file
-		line = [VB_pos, VB_length, VB_m, det_pos_x, det_pos_y, VB_filenames[0], VB_filenames[1]]
-		line.extend([ratio, ratio_err])
+		line = [VB_pos, VB_length, VB_m, VB_thickness, det_pos_x, det_pos_y, VB_filenames[0], VB_filenames[1]]
+		line.extend([vb_sum, vb_sum_err, ratio, ratio_err])
 		with open(summary_file, 'a', newline='') as file:
 			writer = csv.writer(file)
 			writer.writerow(line)

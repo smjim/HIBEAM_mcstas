@@ -10,7 +10,7 @@ class colors:
 	BLUE = '\033[34m'
 
 # VB blades individually focused with interpolation from file 
-def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, source_pos_file):
+def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, source_pos_file_y):
 	# Arrays to store final VB characteristics (vestigial implementation from when it was written in C)
 	y_vals = np.zeros(10000) 
 	angles = np.zeros(10000) 
@@ -23,8 +23,8 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 		return theta_b
 
 	# Read source_pos_file and store data
-	data = np.loadtxt(source_pos_file)
-	y_blade, y_src = data[:,0], data[:,1]
+	data_y = np.loadtxt(source_pos_file_y)
+	y_blade, y_src = data_y[:,0], data_y[:,1]
 	def get_ysrc_from_y(y):
 		# y corresponds to y_blade
 		# Linearly interpolate ysrc using y in the y_blade array
@@ -81,11 +81,11 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 
 		angles[i] = math.atan((yrc - y0) / (length / 2.))			# Blade angle
 		y_vals[i] = yrc + (thickness / 2.) * math.cos(angles[i])	# Blade center position, !not center of reflective surface
+		print(i, y_vals[i])
 
 	# --------------------------------
 	# Generate lower array
 
-	#TODO make this work for the lower array
 	# inner angle, outer angle for vb blades
 	inner_angle = math.atan(vy[1] / zvb)
 	outer_angle = math.atan(vy[0] / zvb)
@@ -175,8 +175,8 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 	# remove trailing zeros from y_vals, angles
 	return np.trim_zeros(y_vals, 'b'), np.trim_zeros(angles, 'b')
 
-def generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file):
-	print(colors.BLUE + f'VB parameters:\nVB_pos={VB_pos}, zdet={zdet}, det_pos={det_pos}, VB_length={VB_length}, VB_thickness={VB_thickness}, vy={vy}, hx={hx}, source_pos_filename={source_pos_file}' + colors.ENDC)
+def generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file_x, source_pos_file_y):
+	print(colors.BLUE + f'VB parameters:\nVB_pos={VB_pos}, zdet={zdet}, det_pos={det_pos}, VB_length={VB_length}, VB_thickness={VB_thickness}, vy={vy}, hx={hx}, source_pos_x_filename={source_pos_file_x}, source_pos_y_filename={source_pos_file_y}' + colors.ENDC)
 
 	# vy, hx [cm]
 	vy *= 0.01
@@ -190,8 +190,10 @@ def generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx,
 	x_center = -0.5*(hx[3] + hx[0])
 
 	# --------------------------------
-	# Create vertically reflecting blade geometry with point focus!!!!!!!!
-	y_vals_v, angles_v = generate_VB_array_pointFocused(VB_length, VB_thickness, VB_pos, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
+	# Create vertically reflecting blade geometry with point focus
+	#TODO figure out issue with lost intensity
+	y_vals_v, angles_v = generate_VB_array_pointFocused(VB_length, VB_thickness, VB_pos, zdet, 100, 0.01, 0) # hvb = 100, hdet = 0.01 
+	#y_vals_v, angles_v = generate_VB_array_pointFocused(VB_length, VB_thickness, VB_pos, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
 
 	# Apply restrictions to blade geometry:
 	mask1_v = np.logical_and(y_vals_v >= vy[0], y_vals_v <= vy[1])
@@ -217,9 +219,33 @@ def generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx,
 	v_reflecting_venbla_geometry = f"Venbla_vertically_reflecting_geometry_pointFocused_{VB_pos}_{zdet}_{det_pos[0]}_{det_pos[1]}_{VB_length}_{VB_thickness}.off"
 	write_VB(v_blades, v_reflecting_venbla_geometry)
 
+#	# Create vertically reflecting blade geometry with interpolated individual blade focusing
+#	y_vals_v, angles_v = generate_VB_array_bladeFocused(VB_pos, zdet, ydet, VB_length, VB_thickness, vy, source_pos_file_y)
+#
+#	# Write the blade geometry to file:
+#	v_blades = []
+#
+#	print(f'wvb: {wvb}, y_center: {x_center}')
+#	for i in range(len(y_vals_v)):
+#		# Append each combination of parameters to h_blades list
+#		# x extent [m], y extent [m], z extent [m], xpos[m], ypos [m], zpos [m], angle [deg]
+#		v_blades.append((wvb, VB_thickness, VB_length, x_center, y_vals_v[i], 0.0, angles_v[i])) # zvb := 0.0 in relation to center of component
+#
+#	print(y_vals_v)
+#	print(angles_v)
+#	print(f'number of v_blades: {y_vals_v.size}')
+#	v_reflecting_venbla_geometry = f"Venbla_vertically_reflecting_geometry_bladeFocused_{VB_pos}_{zdet}_{det_pos[0]}_{det_pos[1]}_{VB_length}_{VB_thickness}.off"
+#	write_VB(v_blades, v_reflecting_venbla_geometry)
+
 	# --------------------------------
-	# Create horizontally reflecting blade geometry with interpolated individual blade focusing!!!!!!!!!
-	x_vals_h, angles_h = generate_VB_array_bladeFocused(VB_pos, zdet, xdet, VB_length, VB_thickness, hx, source_pos_file)
+	# Create horizontally reflecting blade geometry with interpolated individual blade focusing
+	# TODO figure out issue with lost intensity
+	#hx = [-0.17676768, -0.05527638, 0.10552764, 0.24747475] 
+	#hx[1] -= 0.05
+	#hx[2] -= 0.05
+	#print(hx)
+	x_vals_h, angles_h = generate_VB_array_bladeFocused(VB_pos, zdet, 0, VB_length, VB_thickness, hx, source_pos_file_x)
+	#x_vals_h, angles_h = generate_VB_array_bladeFocused(VB_pos, zdet, xdet, VB_length, VB_thickness, hx, source_pos_file_x)
 
 	# Write the blade geometry to file:
 	h_blades = []

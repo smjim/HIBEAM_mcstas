@@ -38,7 +38,8 @@ string H_r_VB_filename="Venbla_horizontally_reflecting_geometry.off"
 
 DECLARE 
 %{
-double target_angle;
+double target_angle_x;
+double target_angle_y;
 %}
 
 USERVARS 
@@ -48,8 +49,10 @@ double trackid_and_nscatter; // Neutron track ID (first 30 bits of MCPL userflag
 
 INITIALIZE 
 %{
-target_angle = (180/3.14159265359) * atan(target_x/ (target_cp-5.390744651928291));
-fprintf(stderr,"target angle: %f\n", target_angle);
+target_angle_x = (180/3.14159265359) * atan(target_x/ target_cp);
+target_angle_y = (180/3.14159265359) * atan(target_y/ target_cp);
+fprintf(stderr,"target angle x: %f\n", target_angle_x);
+fprintf(stderr,"target angle y: %f\n", target_angle_y);
 %}
 
 TRACE 
@@ -72,9 +75,13 @@ t=0;
 COMPONENT BPCS = Arm()
 AT (0.0,0.0,5.390744651928291) RELATIVE Source
 
+COMPONENT E6_Rotated = Arm()
+ AT (0.0,0.0,0.0) RELATIVE Source
+ ROTATED (-target_angle_y, target_angle_x, 0) RELATIVE Source
+
 COMPONENT BPCS_Rotated = Arm()
- AT (0.0,0.0,0.0) RELATIVE BPCS
- ROTATED (0, target_angle, 0) RELATIVE BPCS
+ AT (0.0,0.0,5.390744651928291) RELATIVE E6_Rotated
+ ROTATED (0.0, 0.0, 0.0) RELATIVE E6_Rotated
 
 COMPONENT nboa_engineering_constraints = Shape(
  geometry = "nboa_engineering_constraints.off")
@@ -193,6 +200,21 @@ COMPONENT h_r_VB_mcpl_output = MCPL_output(
     filename="h_r_VB_output.mcpl")
 AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
 
+// reset TOF after VB
+COMPONENT VB_monitor_exit = PSD_monitor(
+    nx=100,
+    ny=100,
+    filename="VB_pos_image_exit.dat",
+    xwidth=1.0,
+    yheight=1.0)
+AT (0, 0, (1.5*VB_length)+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
+/*
+EXTEND %{
+trackid_and_nscatter=(double)mcget_run_num();
+t=0;
+%}
+*/
+
 /* END OF VENETIAN BLINDS */
 
 
@@ -232,16 +254,19 @@ AT (-0.0,-0.0,59.5004) RELATIVE BPCS
 
 
 // Target Coordinate System for slit, mcpl output, and monitor for viewing
-COMPONENT Target_Coordinate_System = Arm()
- AT (0.0,0.0,59.5005) RELATIVE BPCS 
+COMPONENT Target_Coordinate_System_VB = Arm()
+ AT (0.0,0.0,59.5005) RELATIVE BPCS_Rotated
+
+COMPONENT Target_Coordinate_System_instr = Arm()
+ AT (0.0,0.0,59.5005) RELATIVE BPCS
 
 COMPONENT slit_target = Slit(
     radius=0.20)
-AT (target_x, target_y, 1e-9) RELATIVE Target_Coordinate_System
+AT (target_x, target_y, 1e-9) RELATIVE Target_Coordinate_System_instr
 
 COMPONENT target_mcpl_output = MCPL_output(
     filename="target_output.mcpl")
-AT (0, 0, 2e-9) RELATIVE Target_Coordinate_System
+AT (0, 0, 2e-9) RELATIVE Target_Coordinate_System_VB
 
 COMPONENT psd_monitor_target_2 = PSD_monitor(
     nx=200,
@@ -249,7 +274,7 @@ COMPONENT psd_monitor_target_2 = PSD_monitor(
     filename="collimated_target_image.dat",
     xwidth=2.0,
     yheight=2.0)
-AT (0, 0, 3e-9) RELATIVE Target_Coordinate_System
+AT (0, 0, 3e-9) RELATIVE Target_Coordinate_System_instr
 
 
 FINALLY 

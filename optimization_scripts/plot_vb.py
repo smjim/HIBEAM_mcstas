@@ -115,6 +115,9 @@ def count_results(image_data, square=None, circle=None, noShow=False, save_image
 
 	if circle:
 		x0, y0, radius = circle
+		x0 *= 100
+		y0 *= 100
+		radius *= 100
 		x_indices, y_indices = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
 		mask = ((extent[0] + x_indices * dx - x0) ** 2 + (extent[2] + y_indices * dy - y0) ** 2 <= radius ** 2)
 		roi_area = np.pi * radius ** 2
