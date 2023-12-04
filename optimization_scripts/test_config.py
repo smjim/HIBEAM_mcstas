@@ -39,8 +39,8 @@ if __name__ == "__main__":
 		writer = csv.writer(file)
 
 		# write header
-		header = ['VB_pos', 'VB_length', 'VB_m', 'det_pos x', 'det_pos y', 'VB_filename v reflecting', 'VB_filename h reflecting'] # input variables
-		header.extend(['ratio', 'ratio_err'])	# tested outputs
+		header = ['VB_pos', 'VB_length', 'VB_m', 'VB_thickness', 'det_pos x', 'det_pos y', 'VB_filename v reflecting', 'VB_filename h reflecting'] # input variables
+		header.extend(['target sum', 'target err', 'ratio', 'ratio_err'])	# tested outputs
 		writer.writerow(header)
 
 	# --------------------------------
@@ -51,7 +51,8 @@ if __name__ == "__main__":
 
 	# Step 1.b: Create config_list
 	# Baseline configuration
-	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
+	det_pos = [-0.3, -0.1]
+	baseline_config = [10, 0.5, 4, det_pos, 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
 	print(baseline_config)
 
 	# Parameter options
@@ -59,8 +60,8 @@ if __name__ == "__main__":
 	VB_length_vals = [0.3, 0.5]		# VB length is tied to geometry file 
 	VB_m_vals = [3, 4]
 	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file
-	Det_pos_x_vals = [-0.3]			# Det pos value is tied to geometry file through focusing
-	Det_pos_y_vals = [-0.1]
+	Det_pos_x_vals = [det_pos[0]]			# Det pos value is tied to geometry file through focusing
+	Det_pos_y_vals = [det_pos[1]]
 
 	# all combinations of configs above 
 	grid_array1, grid_array2, grid_array3, grid_array4, grid_array5, grid_array6 = np.meshgrid(VB_pos_vals, VB_length_vals, VB_m_vals, VB_thickness_vals, Det_pos_x_vals, Det_pos_y_vals)
@@ -84,9 +85,16 @@ if __name__ == "__main__":
 	plot_results(target_image_no_vb_data, plot_type='full', save_image=f'{image_dir}02_target_image_no_vb.pdf', noShow=noShow)
 
 	# Calculate baseline FoM
-	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0]*100, det_pos[1]*100, 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
 	print(colors.GREEN + f'\nBaseline Calculation: {no_vb_sum} ± {no_vb_sum_err} nT^2/pulse\n' + colors.ENDC)
 	print(colors.GREEN + f'\nRatio: {1.00} ± {0.00}\n' + colors.ENDC)
+
+	# Write output to file
+	line = ['no vb', 'no vb', 'no vb', 'no vb', det_pos[0], det_pos[1], 'no vb', 'no vb'] 
+	line.extend([no_vb_sum, no_vb_err, '1.00', '0.00'])
+	with open(summary_file, 'a', newline='') as file:
+		writer = csv.writer(file)
+		writer.writerow(line)
 
 	# Step 2.b: Run configurations
 	n = 1e6
@@ -110,8 +118,8 @@ if __name__ == "__main__":
 		print(colors.GREEN + f'\nEstimated improvement: {ratio} ± {ratio_err}\n' + colors.ENDC)
 
 		# Write output to file
-		line = [VB_pos, VB_length, VB_m, det_pos_x, det_pos_y, VB_filenames[0], VB_filenames[1]]
-		line.extend([ratio, ratio_err])
+		line = [VB_pos, VB_length, VB_m, VB_thickness, det_pos_x, det_pos_y, VB_filenames[0], VB_filenames[1]]
+		line.extend([vb_sum, vb_err, ratio, ratio_err])
 		with open(summary_file, 'a', newline='') as file:
 			writer = csv.writer(file)
 			writer.writerow(line)
