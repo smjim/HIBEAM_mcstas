@@ -15,7 +15,7 @@
 * 
 * %Identification
 * Written by: Python McStas Instrument Generator
-* Date: 13:42:54 on agosto 07, 2023
+* Date: 15:25:30 on August 15, 2023
 * Origin: ESS DMSC
 * %INSTRUMENT_SITE: Generated_instruments
 * 
@@ -25,13 +25,20 @@
 * %End 
 ********************************************************************************/
 
-DEFINE INSTRUMENT hibeam (	VB_pos = 15,					// Z distance from source to Venetian Blinds
-							VB_length = 0.30,				// Z extent of Venetian Blinds
-							VB_m = 4						// m value of Venetian Blinds supermirrors
+DEFINE INSTRUMENT hibeam (
+double target_cp = 65,
+double target_x = 0.0,
+double target_y = 0.0,
+double VB_pos=15,
+double VB_length=0.3,
+double VB_m=4,
+string V_r_VB_filename="Venbla_vertically_reflecting_geometry.off",
+string H_r_VB_filename="Venbla_horizontally_reflecting_geometry.off"
 )
 
 DECLARE 
 %{
+double target_angle;
 %}
 
 USERVARS 
@@ -41,7 +48,8 @@ double trackid_and_nscatter; // Neutron track ID (first 30 bits of MCPL userflag
 
 INITIALIZE 
 %{
-// Start of initialize for generated hibeam
+target_angle = (180/3.14159265359) * atan(target_x/ (target_cp-5.390744651928291));
+fprintf(stderr,"target angle: %f\n", target_angle);
 %}
 
 TRACE 
@@ -51,31 +59,37 @@ AT (0,0,0) ABSOLUTE
 COMPONENT Source = ESS_butterfly(
  sector = "E", beamline = 6,
  cold_frac = 0.7, dist = 1.89074,
- focus_xw = 0.104, focus_yh = 0.0934706,
+ focus_xw = 0.114, focus_yh = 0.124,
  Lmin = 0.1, Lmax = 20,
  n_pulses = 1, acc_power = 2)
 AT (0,0,0) ABSOLUTE
 EXTEND %{
 trackid_and_nscatter=(double)mcget_run_num();
+t=0;
 %}
 
+// Exit of monolith guide
 COMPONENT BPCS = Arm()
 AT (0.0,0.0,5.390744651928291) RELATIVE Source
 
+COMPONENT BPCS_Rotated = Arm()
+ AT (0.0,0.0,0.0) RELATIVE BPCS
+ ROTATED (0, target_angle, 0) RELATIVE BPCS
+
 COMPONENT nboa_engineering_constraints = Shape(
  geometry = "nboa_engineering_constraints.off")
-AT (0.0,-0.05530292499999999,-1.787) RELATIVE BPCS
+AT (0.0,-0.055,-1.757) RELATIVE BPCS
 
 COMPONENT L_monitor_entry = L_monitor(
- nL = 500, xmin = -0.052,
- xmax = 0.052, ymin = -0.0467353,
- ymax = 0.0177177, Lmin = 0.1,
+ nL = 500, xmin = -0.057,
+ xmax = 0.057, ymin = -0.062,
+ ymax = 0.025, Lmin = 0.1,
  Lmax = 20)
 AT (0.0,0,-3.497) RELATIVE BPCS
 
 COMPONENT monolith_guide_entrance_slit = Slit(
- xmin = -0.0320941, xmax = 0.0515952,
- ymin = -0.0390068, ymax = 0.0247853)
+ xmin = -0.0256303, xmax = 0.052,
+ ymin = -0.05293559, ymax = 0.0248676)
 AT (0.0,0.0,-3.497) RELATIVE BPCS
 
 COMPONENT asym_monolith_guide = Guide_anyshape(
@@ -94,42 +108,43 @@ COMPONENT monolith_guide_solid_angle_exit_bottom = Shape(
 AT (0,0,0) ABSOLUTE
 
 COMPONENT PSD_monitor_exit_monolith_guide = PSD_monitor(
- xmin = 0.0171838, xmax = 0.160901,
- ymin = -0.156969, ymax = 0.134965)
-AT (0.0,0.0,-0.077) RELATIVE BPCS
+ xmin = -0.0933276, xmax = 0.0933276,
+ ymin = -0.101513, ymax = 0.035)
+AT (0.0,0.0,-0.017) RELATIVE BPCS
 
-COMPONENT L_monitor_exit_monolith_guide = L_monitor(
- nL = 500,
- xmin = 0.0171838, xmax = 0.160901,
- ymin = -0.156969, ymax = 0.134965,
- Lmin=0.1, Lmax=20)
-AT (0.0,0.0,-0.077) RELATIVE BPCS
+/*
+COMPONENT guide2_start = Arm()
+AT (0.0,-0.10,0.6) RELATIVE BPCS
 
-COMPONENT bunker_wall = Shape(
- radius = 15, yheight = 2,
- thickness = 3.5)
-AT (-0.004412486121389605,0.0,-0.10935734985006093) ABSOLUTE
+COMPONENT second_guide = Guide_anyshape(
+ m = 4, geometry = "second_guide.off")
+AT (0.0,0.0,1E-6) RELATIVE guide2_start
+EXTEND %{
+if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
+%}
+*/
 
 /* START OF VENETIAN BLINDS */
 
 COMPONENT HIBEAM_Venbla_Coordinate_System = Arm()
- AT (0.0,0.0,VB_pos-5.5) RELATIVE BPCS
+ AT (0.0,0.0,VB_pos-5.5) RELATIVE BPCS_Rotated
+ ROTATED (0, 0, 0) RELATIVE BPCS_Rotated
 
 COMPONENT VB_monitor_entrance = PSD_monitor(
-    nx=100, 
-    ny=100, 
-    filename="VB_pos_image_entrance.dat", 
-    xwidth=1.0, 
+    nx=100,
+    ny=100,
+    filename="VB_pos_image_entrance.dat",
+    xwidth=1.0,
     yheight=1.0)
-AT (0, 0, -0.5*VB_length) RELATIVE HIBEAM_Venbla_Coordinate_System 
+AT (0, 0, -0.5*VB_length) RELATIVE HIBEAM_Venbla_Coordinate_System
 
 // Vertically Reflecting Venetian Blinds
 COMPONENT V_Reflecting_Venbla = Guide_anyshape(
  m=VB_m,
- geometry="Venbla_vertically_reflecting_geometry.off")
-AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System 
+ geometry=V_r_VB_filename)
+AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System
 EXTEND %{
-if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
+if (SCATTERED) {t = 0.0; };
 %}
 
 COMPONENT v_reflecting_VB_monitor_midpoint = PSD_monitor(
@@ -138,6 +153,10 @@ COMPONENT v_reflecting_VB_monitor_midpoint = PSD_monitor(
     filename="v_reflecting_VB_pos_image_midpoint.dat",
     xwidth=1.0,
     yheight=1.0)
+AT (0, 0, 0) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+COMPONENT v_r_VB_mcpl_output = MCPL_output(
+    filename="v_r_VB_output.mcpl")
 AT (0, 0, 0) RELATIVE HIBEAM_Venbla_Coordinate_System
 
 COMPONENT VB_monitor_midpoint = PSD_monitor(
@@ -149,20 +168,20 @@ COMPONENT VB_monitor_midpoint = PSD_monitor(
 AT (0, 0, (0.5*VB_length)+0.005) RELATIVE HIBEAM_Venbla_Coordinate_System
 
 COMPONENT TOF2_monitor_midpoint = PSDT2_monitor(
-	xmin=-0.5, xmax=0.5, 
-	ymin=-0.5, ymax=0.5, 
-	nx=100, ny=100, 
-	filename="TOF2_monitor_midpoint.dat")
+    xmin=-0.5, xmax=0.5,
+    ymin=-0.5, ymax=0.5,
+    nx=100, ny=100,
+    filename="TOF2_monitor_midpoint.dat")
 AT (0, 0, (0.5*VB_length)+0.005) RELATIVE HIBEAM_Venbla_Coordinate_System
 
 // Horizontally Reflecting Venetian Blinds
 COMPONENT H_Reflecting_Venbla = Guide_anyshape(
  m=VB_m,
- geometry="Venbla_horizontally_reflecting_geometry.off")
+ geometry=H_r_VB_filename)
 AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
 ROTATED (0.0, 0.0, 90) RELATIVE HIBEAM_Venbla_Coordinate_System
 EXTEND %{
-if (SCATTERED) {t = 0.0; trackid_and_nscatter += 1073741824;};
+if (SCATTERED) {t = 0.0; };
 %}
 
 COMPONENT h_reflecting_VB_monitor_midpoint = PSD_monitor(
@@ -173,6 +192,11 @@ COMPONENT h_reflecting_VB_monitor_midpoint = PSD_monitor(
     yheight=1.0)
 AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
 
+COMPONENT h_r_VB_mcpl_output = MCPL_output(
+    filename="h_r_VB_output.mcpl")
+AT (0, 0, VB_length+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
+
+// reset TOF after VB 
 COMPONENT VB_monitor_exit = PSD_monitor(
     nx=100,
     ny=100,
@@ -180,36 +204,59 @@ COMPONENT VB_monitor_exit = PSD_monitor(
     xwidth=1.0,
     yheight=1.0)
 AT (0, 0, (1.5*VB_length)+0.01) RELATIVE HIBEAM_Venbla_Coordinate_System
+EXTEND %{
+trackid_and_nscatter=(double)mcget_run_num();
+t=0;
+%}
 
 /* END OF VENETIAN BLINDS */
 
+COMPONENT bunker_wall = Shape(
+ radius = 15, yheight = 2,
+ thickness = 3.5)
+AT (-0.004412486121389605,0.0,-0.10935734985006093) ABSOLUTE
+
+COMPONENT TOF = TOF_monitor(
+ nt = 100, filename = "TOF.dat",
+ tmin = 0, tmax = 328612)
+AT (0.0,0.0,59.5001) RELATIVE BPCS
+
+COMPONENT T2large = T2_monitor(
+ nt = 100, filename = "mon100cm.dat",
+ tmin = 0, tmax = 328612,
+ radius = 0.5)
+AT (-0.40,-0.50,59.5002) RELATIVE BPCS
+
+COMPONENT T2small = T2_monitor(
+ nt = 100, filename = "mon40cm.dat",
+ tmin = 0, tmax = 328612,
+ radius = 0.2)
+AT (-0.40,-0.50,59.5002) RELATIVE BPCS
+
+COMPONENT PSD_monitor_detector = PSD_monitor(
+ xmin = -1.50, xmax = 1.50,
+ ymin = -1.50, ymax = 1.50,
+nx=150, ny=150, filename="psd_detector.dat")
+AT (-0.0,-0.0,59.5003) RELATIVE BPCS
+
+COMPONENT PSDT2_monitor_detector = PSDT2_monitor(
+ xmin = -1.50, xmax = 1.50,
+ ymin = -1.50, ymax = 1.50,
+nx=150, ny=150, filename="psdt2_large.dat")
+AT (-0.0,-0.0,59.5004) RELATIVE BPCS
+
+
+// Target Coordinate System for slit, mcpl output, and monitor for viewing
 COMPONENT Target_Coordinate_System = Arm()
- AT (0.0,0.0,59.5) RELATIVE BPCS 
-
-COMPONENT target_TOF2_monitor = PSDT2_monitor(
-	xmin=-2.0, xmax=2.0,
-	ymin=-2.0, ymax=2.0,
-	nx=100, ny=100, 
-	filename="tof_monitor.dat")
-AT (0.0,0.0,1e-9) RELATIVE Target_Coordinate_System 
-
-COMPONENT psd_monitor_target = PSD_monitor(
-    nx=100, 
-    ny=100, 
-    filename="target_image.dat", 
-    xwidth=4.0, 
-    yheight=4.0)
-AT (0.0,0.0,2e-9) RELATIVE Target_Coordinate_System 
-
-// absorbers to limit the neutrons collected in mcpl_output
+ AT (0.0,0.0,59.5005) RELATIVE BPCS 
 
 COMPONENT slit_target = Slit(
     radius=0.20)
-AT (0.00, -0.00, 3e-9) RELATIVE Target_Coordinate_System // specify deflection to (xx, yy) as AT (xx, -yy)
+AT (target_x, target_y, 1e-9) RELATIVE Target_Coordinate_System
 
-COMPONENT mcpl_output = MCPL_output(
+COMPONENT target_mcpl_output = MCPL_output(
     filename="target_output.mcpl")
-AT (0, 0, 4e-9) RELATIVE Target_Coordinate_System
+AT (0, 0, 2e-9) RELATIVE Target_Coordinate_System
 
 COMPONENT psd_monitor_target_2 = PSD_monitor(
     nx=200,
@@ -217,10 +264,13 @@ COMPONENT psd_monitor_target_2 = PSD_monitor(
     filename="collimated_target_image.dat",
     xwidth=2.0,
     yheight=2.0)
-AT (0, 0, 5e-9) RELATIVE Target_Coordinate_System
+AT (0, 0, 3e-9) RELATIVE Target_Coordinate_System
+
 
 FINALLY 
 %{
+// Start of finally for generated hibeam
 %}
 
 END
+

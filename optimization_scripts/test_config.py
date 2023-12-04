@@ -51,16 +51,16 @@ if __name__ == "__main__":
 
 	# Step 1.b: Create config_list
 	# Baseline configuration
-	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
+	baseline_config = [10, 0.5, 4, (-0.43, -0.47), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
 	print(baseline_config)
 
 	# Parameter options
-	VB_pos_vals = [8, 10, 15]		# VB pos is tied to geometry file though focusing
-	VB_length_vals = [0.3, 0.5]		# VB length is tied to geometry file 
-	VB_m_vals = [3, 4]
+	VB_pos_vals = [10] #[8, 10, 15]		# VB pos is tied to geometry file though focusing
+	VB_length_vals = [0.5] #[0.3, 0.5]		# VB length is tied to geometry file 
+	VB_m_vals = [4] #[3, 4]
 	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file
-	Det_pos_x_vals = [-0.3]			# Det pos value is tied to geometry file through focusing
-	Det_pos_y_vals = [-0.1]
+	Det_pos_x_vals = [-0.43]			# Det pos value is tied to geometry file through focusing
+	Det_pos_y_vals = [-0.47]
 
 	# all combinations of configs above 
 	grid_array1, grid_array2, grid_array3, grid_array4, grid_array5, grid_array6 = np.meshgrid(VB_pos_vals, VB_length_vals, VB_m_vals, VB_thickness_vals, Det_pos_x_vals, Det_pos_y_vals)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 		target_image_data = output_to_image_data("{}/psdt2_large.dat".format(yes_VB_outDir))
 	
 		# Show output images/ save to file  
-		vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
+		vb_sum, vb_sum_err = count_results(target_image_data, circle=[det_pos_x*100, det_pos_y*100, 20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
 		ratio = vb_sum/no_vb_sum
 		ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
 		print(colors.GREEN + f'\nEstimated improvement: {ratio} ± {ratio_err}\n' + colors.ENDC)

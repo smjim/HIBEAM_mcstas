@@ -150,7 +150,7 @@ if __name__ == "__main__":
 	# --------------------------------
 	# Step 2: Run with generated VB and show output 
 	# --------------------------------
-	baseline_config = [10, 0.5, 4, (-0.3, -0.1), 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
+	baseline_config = [10, 0.5, 4, det_pos, 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
 	n = 1e6
 
 	# Step 2.a: Run baseline (without VB)
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 	plot_results(target_image_no_vb_data, plot_type='full', save_image=f'{image_dir}02_target_image_no_vb.pdf', noShow=noShow)
 
 	# Calculate baseline FoM
-	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[-30, -10, 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0], det_pos[1], 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
 	print(colors.GREEN + f'\nBaseline Calculation: {no_vb_sum} ± {no_vb_sum_err} nT^2/pulse\n' + colors.ENDC)
 	print(colors.GREEN + f'\nRatio: {1.00} ± {0.00}\n' + colors.ENDC)
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
 	n = 1e6
 	VB_filenames = [None, None]
 
-	vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}05_target_with_vb.pdf', noShow=noShow)
+	vb_sum, vb_sum_err = count_results(target_image_data, circle=[det_pos[0], det_pos[1], 20], save_image=f'{image_dir}05_target_with_vb.pdf', noShow=noShow)
 	ratio = vb_sum/no_vb_sum
 	ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
 	print(f'Estimated improvement: {ratio} ± {ratio_err}')

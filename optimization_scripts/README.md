@@ -34,3 +34,7 @@ options:
   --detpos detx dety    displacement of detector position
 ```
 
+
+### Additional examples 
+Run VB configuration for given parameter configuration
+`python3 optimization_scripts/focused_Venbla_xy_to_off.py 10 0.5 0.0001 4 55 tmpa/ --detpos -0.3 -0.1`

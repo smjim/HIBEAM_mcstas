@@ -23,8 +23,8 @@ def generate_hash(*parameters):
 
 # run simulation with params
 def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB, dead_monolith=False):
-	instr = "target40cm_off.instr"
-	instr_no_vb = "target40cm_off_no_vb.instr"
+	instr = "hibeam_VB.instr"
+	instr_no_vb = "hibeam_noSecondFocusing.instr"
 	instr_no_vb_dead_monolith = "target40cm_off_no_vb_dead_monolith.instr"
 	mpi = 1
 
@@ -77,7 +77,7 @@ def run_backprop(dirName, zvb):
 	os.system(mcpltool_command)
 
 	# Run back_propagate.cpp with given zvb
-	backprop_command = "./optimization_scripts/backprop/back_propagate {} {}/target_output.dat {}".format(zvb, dirName, outFile)
+	backprop_command = "../optimization_scripts/backprop/back_propagate {} {}/target_output.dat {}".format(zvb, dirName, outFile)
 	print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
 	os.system(backprop_command)
 
@@ -105,14 +105,14 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 
 			# Generate image of what is being backpropagated
 			v_r_VB_blade_file = f'{outDir}/v_r_VB_histogram_{y}_{zvb-0.001}.dat'
-			os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/v_r_VB_output.dat {v_r_VB_blade_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}")
+			os.system(f"../optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/v_r_VB_output.dat {v_r_VB_blade_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}")
 			# Plot what is being backpropagated
 			v_r_VB_blade_image_data = output_to_image_data(v_r_VB_blade_file)
 			plot_results(v_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}05_v_r_VB_blade_{i}_image.pdf', noShow=noShow)
 	
 			# Backpropagate from selected blade
 			v_r_VB_back_file = f'{outDir}/v_r_VB_histogram_{y}_0.dat'
-			backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/v_r_VB_output.dat {v_r_VB_back_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}"
+			backprop_command = f"../optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/v_r_VB_output.dat {v_r_VB_back_file} --rectangle {vx[0]} {ymin} {vx[3]} {ymax}"
 			print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
 			os.system(backprop_command)
 			# Plot result of backpropagation
@@ -137,14 +137,14 @@ def optimal_source_positions(zvb, vx, vy, hx, hy, length, outDir, imageDir, noSh
 	
 			# Generate image of what is being backpropagated
 			h_r_VB_blade_file = f'{outDir}/h_r_VB_histogram_{x}_{zvb-0.001}.dat'
-			os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {h_r_VB_blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
+			os.system(f"../optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {h_r_VB_blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
 			# Plot what is being backpropagated
 			h_r_VB_blade_image_data = output_to_image_data(h_r_VB_blade_file)
 			plot_results(h_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}08_h_r_VB_blade_{i}_image.pdf', noShow=noShow)
 	
 			# Backpropagate from selected blade
 			h_r_VB_back_file = f'{outDir}/h_r_VB_histogram_{x}_0.dat'
-			backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/h_r_VB_output.dat {h_r_VB_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
+			backprop_command = f"../optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/h_r_VB_output.dat {h_r_VB_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
 			print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
 			os.system(backprop_command)
 			# Plot result of backpropagation
@@ -227,12 +227,12 @@ def show_blade_x_scan(zvb, hx, hy, length, outDir, histDir, dx=0.2):	# dx [cm]
 			xmin = tmp
 
 		# Plot what is being backpropagated
-		os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
+		os.system(f"../optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
 		VB_blade_image_data = output_to_image_data(blade_file)
 
 		# Backpropagate from selected blade
 		blade_back_file = f'{histDir}/histogram_x_scan_{i:03d}.dat'
-		backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.001 {outDir}/h_r_VB_output.dat {blade_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
+		backprop_command = f"../optimization_scripts/backprop/back_propagate_selected {zvb} 0.001 {outDir}/h_r_VB_output.dat {blade_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
 		print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
 		os.system(backprop_command)
 
@@ -410,14 +410,14 @@ def source_interpolation(zvb, hx, hy, length, num_gridpoints, outDir, vb_summary
 
 		# Generate image of what is being backpropagated
 		h_r_VB_blade_file = f'{outDir}/h_r_VB_histogram_{x}_{zvb-0.001}.dat'
-		os.system(f"./optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {h_r_VB_blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
+		os.system(f"../optimization_scripts/backprop/back_propagate_selected {zvb} {zvb-0.001} {outDir}/h_r_VB_output.dat {h_r_VB_blade_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}")
 		## Plot what is being backpropagated
 		h_r_VB_blade_image_data = output_to_image_data(h_r_VB_blade_file)
 		#plot_results(h_r_VB_blade_image_data, plot_type='full', save_image=f'{imageDir}08_h_r_VB_blade_{i}_image.pdf', noShow=noShow)
 
 		# Backpropagate from selected blade
 		h_r_VB_back_file = f'{outDir}/histogram_x_scan_{i:03d}.dat'
-		backprop_command = f"./optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/h_r_VB_output.dat {h_r_VB_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
+		backprop_command = f"../optimization_scripts/backprop/back_propagate_selected {zvb} 0.01 {outDir}/h_r_VB_output.dat {h_r_VB_back_file} --rectangle {xmin} {hy[0]} {xmax} {hy[3]}"
 		print(colors.YELLOW + "\nrunning command:\n{}".format(backprop_command) + colors.ENDC + '\n')
 		os.system(backprop_command)
 
