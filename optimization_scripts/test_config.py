@@ -58,7 +58,7 @@ if __name__ == "__main__":
 	# Parameter options
 	VB_pos_vals = [8, 10, 15]		# VB pos is tied to geometry file though focusing
 	VB_length_vals = [0.3, 0.5]		# VB length is tied to geometry file 
-	VB_m_vals = [3, 4]
+	VB_m_vals = [0] #[3, 4]
 	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file
 	Det_pos_x_vals = [det_pos[0]]			# Det pos value is tied to geometry file through focusing
 	Det_pos_y_vals = [det_pos[1]]
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 	plot_results(target_image_no_vb_data, plot_type='full', save_image=f'{image_dir}02_target_image_no_vb.pdf', noShow=noShow)
 
 	# Calculate baseline FoM
-	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0]*100, det_pos[1]*100, 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0], det_pos[1], 0.20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
 	print(colors.GREEN + f'\nBaseline Calculation: {no_vb_sum} ± {no_vb_sum_err} nT^2/pulse\n' + colors.ENDC)
 	print(colors.GREEN + f'\nRatio: {1.00} ± {0.00}\n' + colors.ENDC)
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 		target_image_data = output_to_image_data("{}/psdt2_large.dat".format(yes_VB_outDir))
 	
 		# Show output images/ save to file  
-		vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
+		vb_sum, vb_sum_err = count_results(target_image_data, circle=[det_pos_x*100, det_pos_y*100, 20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
 		ratio = vb_sum/no_vb_sum
 		ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
 		print(colors.GREEN + f'\nEstimated improvement: {ratio} ± {ratio_err}\n' + colors.ENDC)

@@ -60,8 +60,8 @@ int main(int argc, char** argv) {
 	std::cout << zvals[0] << std::endl;
 
 	// bounds on histogram plane in x-y [m]
-	double xwidth = 1.00;
-	double ywidth = 1.00;
+	double xwidth = 2.00;
+	double ywidth = 2.00;
 
 	double xmax =  vb_x + xwidth/2.;
 	double xmin =  vb_x - xwidth/2.; 

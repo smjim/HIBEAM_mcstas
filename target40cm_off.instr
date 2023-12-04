@@ -212,6 +212,7 @@ COMPONENT VB_monitor_entrance = PSD_monitor(
 AT (0, 0, -0.5*VB_length) RELATIVE HIBEAM_Venbla_Coordinate_System
 
 // Vertically Reflecting Venetian Blinds
+/*
 COMPONENT V_Reflecting_Venbla = Guide_anyshape(
  m=VB_m,
  geometry=V_r_VB_filename)
@@ -219,6 +220,7 @@ AT (0.0,0.0,0.0) RELATIVE HIBEAM_Venbla_Coordinate_System
 EXTEND %{
 if (SCATTERED) {t = 0.0; };
 %}
+*/
 
 COMPONENT v_reflecting_VB_monitor_midpoint = PSD_monitor(
     nx=100,
