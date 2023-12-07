@@ -7,6 +7,8 @@ Venbla_*
 # Generated instrument binaries
 *.out
 *.c
+optimization_scripts/backprop/back_propagate
+optimization_scripts/backprop/back_propagate_selected
 
 # Temporary files
 tmp*
@@ -15,5 +17,6 @@ tmp*
 *.mcpl*
 
 # old stuff
+old_files/
 hibeam_old.instr
 monolith_guide_old.off
