@@ -71,8 +71,7 @@ if __name__ == "__main__":
 	VB_length_vals = [0.5] #[0.3, 0.5]		# VB length is tied to geometry file 
 	VB_m_vals = [0] #[3, 4]
 	VB_thickness_vals = [0.00025] #[0.0005]	# VB thickness is tied to geometry file
-	Det_pos_x_vals = [0]			# Det pos value is tied to geometry file through focusing
-	#Det_pos_x_vals = [det_pos[0]]			# Det pos value is tied to geometry file through focusing
+	Det_pos_x_vals = [det_pos[0]]			# Det pos value is tied to geometry file through focusing
 	Det_pos_y_vals = [det_pos[1]]
 
 	# all combinations of configs above 

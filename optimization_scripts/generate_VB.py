@@ -81,7 +81,7 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 
 		angles[i] = math.atan((yrc - y0) / (length / 2.))			# Blade angle
 		y_vals[i] = yrc + (thickness / 2.) * math.cos(angles[i])	# Blade center position, !not center of reflective surface
-		print(i, y_vals[i])
+		#print(i, y_vals[i])
 
 	# --------------------------------
 	# Generate lower array
@@ -89,8 +89,8 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 	# inner angle, outer angle for vb blades
 	inner_angle = math.atan(vy[1] / zvb)
 	outer_angle = math.atan(vy[0] / zvb)
-	print('lower blade array:')
-	print(inner_angle, outer_angle)
+	#print('lower blade array:')
+	#print(inner_angle, outer_angle)
 
 	# 1. Generate bottom blade
 	# write over blade i, it is lower than <inner_angle>
@@ -100,19 +100,19 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 
 	# 2. Generate successive blades with following: 
 	while (outer_angle <= math.atan(y_vals[i] / zvb) <= inner_angle):
-		print('i value lower blades:')
-		print(i)
+		#print('i value lower blades:')
+		#print(i)
 		i += 1
 		
 		# Use ysrc of previous blade for solid angle calculation
 		ysrc = get_ysrc_from_y(y_vals[i - 1])
-		print(f'yval: {y_vals[i-1]}, ysrc: {ysrc}')
+		#print(f'yval: {y_vals[i-1]}, ysrc: {ysrc}')
 
 		# 2.a: Use previous blade and previous ysrc to find angle for bottom left of current blade (accounting for thickness of blades)
 		y_top_right_previous = y_vals[i - 1] + ((length / 2.) * math.tan(angles[i - 1])) + ((thickness / 2.) * math.cos(angles[i - 1]))
 		theta = math.atan((y_top_right_previous - ysrc) / (zvb + length / 2.))	# angle from (z=0, y=ysrc) to top right of previous blade = angle to bottom left of current blade
-		print('y top right previous')
-		print(y_top_right_previous)
+		#print('y top right previous')
+		#print(y_top_right_previous)
 
 		# Bottom left of new blade (accounting for thickness)
 		y_bot_left = (zvb - (length / 2.)) * math.tan(theta) + ysrc
@@ -123,8 +123,8 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 
 		# 2.b: Interpolate ysrc from data file for blade focusing calculation 
 		ysrc = get_ysrc_from_y(yrc)		# ysrc optimal is approximated by using ysrc for theta=0 
-		print(f'yrc: {yrc}')
-		print(f'ysrc: {ysrc}')
+		#print(f'yrc: {yrc}')
+		#print(f'ysrc: {ysrc}')
 
 		# 2.c: Generate blade focused from ysrc, to y_blade, to y_target 
 		j=0
@@ -136,15 +136,15 @@ def generate_VB_array_bladeFocused(zvb, zdet, ydet, length, thickness, vy, sourc
 
 			delta = 0.5 * (math.atan(zdet / yrc) - math.atan(zvb / (yrc - ysrc)))
 			yrc = y0 + math.tan(delta) * (length / 2.)
-			print(f'==========\n{j} iteration')
-			print(f'delta {delta}, yrc {yrc}, y0 {y0}')
+			#print(f'==========\n{j} iteration')
+			#print(f'delta {delta}, yrc {yrc}, y0 {y0}')
 		if j == max_iter:
 			print("exceeded max iteration count!")
 
 		angles[i] = math.atan((yrc - y0) / (length / 2.))			# Blade angle
 		y_vals[i] = yrc + (thickness / 2.) * math.cos(angles[i])	# Blade center position, !not center of reflective surface
-		print(y_vals[i])
-		print(outer_angle,math.atan(y_vals[i] / zvb),inner_angle)
+		#print(y_vals[i])
+		#print(outer_angle,math.atan(y_vals[i] / zvb),inner_angle)
 
 	print('top and lower blades')
 	print(y_vals)
@@ -191,7 +191,6 @@ def generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx,
 
 	# --------------------------------
 	# Create vertically reflecting blade geometry with point focus
-	#TODO figure out issue with lost intensity
 	y_vals_v, angles_v = generate_VB_array_pointFocused(VB_length, VB_thickness, VB_pos, zdet, 100, 0.01, 0) # hvb = 100, hdet = 0.01 
 	#y_vals_v, angles_v = generate_VB_array_pointFocused(VB_length, VB_thickness, VB_pos, zdet, 100, 0.01, ydet) # hvb = 100, hdet = 0.01 
 
@@ -240,10 +239,11 @@ def generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx,
 	# --------------------------------
 	# Create horizontally reflecting blade geometry with interpolated individual blade focusing
 	# TODO figure out issue with lost intensity
+	print(hx)
 	#hx = [-0.17676768, -0.05527638, 0.10552764, 0.24747475] 
-	#hx[1] -= 0.05
-	#hx[2] -= 0.05
-	#print(hx)
+	#hx[1] -= 0.03
+	#hx[2] += 0.03
+	print(hx)
 	x_vals_h, angles_h = generate_VB_array_bladeFocused(VB_pos, zdet, 0, VB_length, VB_thickness, hx, source_pos_file_x)
 	#x_vals_h, angles_h = generate_VB_array_bladeFocused(VB_pos, zdet, xdet, VB_length, VB_thickness, hx, source_pos_file_x)
 
