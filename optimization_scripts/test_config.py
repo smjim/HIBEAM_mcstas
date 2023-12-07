@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
 	# Write output to file
 	line = ['no vb', 'no vb', 'no vb', 'no vb', det_pos[0], det_pos[1], 'no vb', 'no vb'] 
-	line.extend([no_vb_sum, no_vb_err, '1.00', '0.00'])
+	line.extend([no_vb_sum, no_vb_sum_err, '1.00', '0.00'])
 	with open(summary_file, 'a', newline='') as file:
 		writer = csv.writer(file)
 		writer.writerow(line)
@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
 		# Write output to file
 		line = [VB_pos, VB_length, VB_m, VB_thickness, det_pos_x, det_pos_y, VB_filenames[0], VB_filenames[1]]
-		line.extend([vb_sum, vb_err, ratio, ratio_err])
+		line.extend([vb_sum, vb_sum_err, ratio, ratio_err])
 		with open(summary_file, 'a', newline='') as file:
 			writer = csv.writer(file)
 			writer.writerow(line)
