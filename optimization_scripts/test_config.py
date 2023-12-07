@@ -73,7 +73,7 @@ if __name__ == "__main__":
 	# --------------------------------
 
 	# Step 2.a: Run baseline (without VB)
-	no_VB_outDir = run_hibeam(n, baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[3], ("-", "-"), output_dir, with_VB=False)
+	no_VB_outDir = run_hibeam(n, baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[3], ("-", "-"), output_dir, with_VB=False, noShow=noShow)
 
 	vertical_image_data = output_to_image_data("{}/v_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
 	horizontal_image_data = output_to_image_data("{}/h_reflecting_VB_pos_image_midpoint.dat".format(no_VB_outDir)) 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 	plot_results(target_image_no_vb_data, plot_type='full', save_image=f'{image_dir}02_target_image_no_vb.pdf', noShow=noShow)
 
 	# Calculate baseline FoM
-	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0]*100, det_pos[1]*100, 20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
+	no_vb_sum, no_vb_sum_err = count_results(target_image_no_vb_data, circle=[det_pos[0], det_pos[1], 0.20], save_image=f'{image_dir}03_target_no_vb.pdf', noShow=noShow)
 	print(colors.GREEN + f'\nBaseline Calculation: {no_vb_sum} ± {no_vb_sum_err} nT^2/pulse\n' + colors.ENDC)
 	print(colors.GREEN + f'\nRatio: {1.00} ± {0.00}\n' + colors.ENDC)
 
@@ -106,13 +106,13 @@ if __name__ == "__main__":
 		VB_filenames = get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, (det_pos_x, det_pos_y), 55, output_dir, image_dir, noShow=noShow) 
 
 		# Run simulation with config
-		yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (det_pos_x, det_pos_y), VB_filenames, output_dir, with_VB=True)
+		yes_VB_outDir = run_hibeam(n, VB_pos, VB_length, VB_m, (det_pos_x, det_pos_y), VB_filenames, output_dir, with_VB=True, noShow=noShow)
 	
 		# Capture image from output
 		target_image_data = output_to_image_data("{}/psdt2_large.dat".format(yes_VB_outDir))
 	
 		# Show output images/ save to file  
-		vb_sum, vb_sum_err = count_results(target_image_data, circle=[-30, -10, 20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
+		vb_sum, vb_sum_err = count_results(target_image_data, circle=[det_pos_x, det_pos_y, 0.20], save_image=f'{image_dir}{(4+i):02d}_target_with_vb.pdf', noShow=noShow)
 		ratio = vb_sum/no_vb_sum
 		ratio_err = ratio*np.sqrt(np.square(no_vb_sum_err/no_vb_sum) + np.square(vb_sum_err/vb_sum))
 		print(colors.GREEN + f'\nEstimated improvement: {ratio} ± {ratio_err}\n' + colors.ENDC)

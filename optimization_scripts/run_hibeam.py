@@ -22,7 +22,7 @@ def generate_hash(*parameters):
 	return hash_value
 
 # run simulation with params
-def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB, dead_monolith=False):
+def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, with_VB, dead_monolith=False, noShow=false):
 	instr = "target40cm_off.instr"
 	instr_no_vb = "target40cm_off_no_vb.instr"
 	instr_no_vb_dead_monolith = "target40cm_off_no_vb_dead_monolith.instr"
@@ -55,12 +55,13 @@ def run_hibeam(n, VB_pos, VB_length, VB_m, det_pos, VB_filenames, output_dir, wi
 		if dead_monolith:
 			command = "mcrun --mpi={} {} -d {} -s 1 -n {} VB_pos={} VB_length={} VB_m={} target_x={} target_y={}".format(mpi, instr_no_vb_dead_monolith, filename, n, VB_pos, VB_length, VB_m, det_x, det_y)
 
-	# Redirect output to /dev/null (Unix-based) or NUL (Windows)
-	print('redirecting output')
-	if os.name == "posix":  # Unix-based system (e.g., Linux, macOS)
-		command += " > /dev/null 2>&1"
-	elif os.name == "nt":   # Windows system
-		command += " > NUL 2>&1"
+	if noShow:
+		# Redirect output to /dev/null (Unix-based) or NUL (Windows)
+		print('redirecting output')
+		if os.name == "posix":  # Unix-based system (e.g., Linux, macOS)
+			command += " > /dev/null 2>&1"
+		elif os.name == "nt":   # Windows system
+			command += " > NUL 2>&1"
 	print(colors.YELLOW + "\nrunning command:\n" + command + colors.ENDC + '\n')
 	os.system(command)
 
