@@ -89,7 +89,7 @@ if __name__ == "__main__":
 	print(colors.GREEN + f'\nBaseline Calculation: {no_vb_sum} ± {no_vb_sum_err} nT^2/pulse\n' + colors.ENDC)
 	print(colors.GREEN + f'\nRatio: {1.00} ± {0.00}\n' + colors.ENDC)
 
-	# Write output to file
+	# Write baseline output to file
 	line = ['no vb', 'no vb', 'no vb', 'no vb', det_pos[0], det_pos[1], 'no vb', 'no vb'] 
 	line.extend([no_vb_sum, no_vb_sum_err, '1.00', '0.00'])
 	with open(summary_file, 'a', newline='') as file:
