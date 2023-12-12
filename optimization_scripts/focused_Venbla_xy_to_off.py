@@ -92,11 +92,15 @@ def get_focused_blade_array(VB_pos, VB_length, VB_m, VB_thickness, det_pos, zdet
 	else:
 		source_pos_file = source_pos_interpolate
 
-	#VB_filenames = generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, vyz0, hxz0) # VB with focus linearly interpolated between top and bottom of each blade array 
-	#VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) # Venetian Blinds with pointlike source 
+	# Manually input VB filenames
 	#VB_filenames = ['Venbla_vertically_reflecting_geometry.off', 'Venbla_horizontally_reflecting_geometry.off']
+
+	# VB with focus interpolated from file with many source positions  
 	print(source_pos_file)
-	VB_filenames = generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file) # VB with focus interpolated from file with many source positions 
+	VB_filenames = generate_VB_bladeFocused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vx, vy, hx, hy, source_pos_file) 
+
+	# Venetian Blinds with pointlike source 
+	#VB_filenames = generate_VB_point_focused(VB_pos, zdet, det_pos, VB_length, VB_thickness, vy, hx) 
 
 	return VB_filenames
 

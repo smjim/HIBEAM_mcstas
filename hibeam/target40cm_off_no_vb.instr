@@ -196,7 +196,8 @@ COMPONENT monolith_guide_exit = PSD_monitor(
     xwidth=1.0,
     yheight=1.0)
 AT (0, 0, 0) RELATIVE BPCS
-if (SCATTERED) {t = 0.0; };
+EXTEND %{
+t=0;
 %}
 
 /* START OF VENETIAN BLINDS */

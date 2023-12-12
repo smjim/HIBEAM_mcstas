@@ -1,12 +1,67 @@
 # Run HIBEAM.instr with given parameter set 
 import math
 import numpy as np
+import csv
+
 from run_hibeam import run_hibeam, run_backprop, optimal_source_positions, analyze_image, output_to_image_data, show_blade_x_scan, colors
 from plot_vb import plot_results, show_instr, count_results
 from generate_VB import generate_VB_point_focused, generate_VB_bladeFocused, write_VB
 from focused_Venbla_xy_to_off import get_focused_blade_array
 
-import csv
+# z length m x y thickness
+def baseline_with_swaps(baseline_config, VB_pos_vals, VB_length_vals, VB_m_vals, Det_pos_x, Det_pos_y, VB_thickness_vals):
+	config_list = []
+	baseline_config = np.array([baseline_config[0], baseline_config[1], baseline_config[2], baseline_config[4], baseline_config[3][0], baseline_config[3][1]]) 
+
+	# Iterate through each parameter and create a new configuration
+	for VB_pos in VB_pos_vals:
+		config = np.copy(baseline_config)
+		config[0] = VB_pos
+		config_list.append(config)
+
+	for VB_length in VB_length_vals:
+		config = np.copy(baseline_config)
+		config[1] = VB_length
+		config_list.append(config)
+
+	for VB_m in VB_m_vals:
+		config = np.copy(baseline_config)
+		config[2] = VB_m
+		config_list.append(config)
+
+	for VB_thickness in VB_thickness_vals:
+		config = np.copy(baseline_config)
+		config[3] = VB_thickness
+		config_list.append(config)
+	
+	for Det_pos_x in Det_pos_x_vals:
+		config = np.copy(baseline_config)
+		config[4] = Det_pos_x
+		config_list.append(config)
+
+	for Det_pos_y in Det_pos_y_vals:
+		config = np.copy(baseline_config)
+		config[5] = Det_pos_y
+		config_list.append(config)
+
+	return np.array(config_list)
+
+def all_combinations(VB_pos_vals, VB_length_vals, VB_m_vals, Det_pos_x_vals, Det_pos_y_vals, VB_thickness_vals):
+	grid_array1, grid_array2, grid_array3, grid_array4, grid_array5, grid_array6 = np.meshgrid(
+		VB_pos_vals, VB_length_vals, VB_m_vals, VB_thickness_vals, Det_pos_x_vals, Det_pos_y_vals
+	)
+	config_list = np.vstack(
+		(
+			grid_array1.ravel(),
+			grid_array2.ravel(),
+			grid_array3.ravel(),
+			grid_array4.ravel(),
+			grid_array5.ravel(),
+			grid_array6.ravel(),
+		)
+	).T
+
+	return config_list
 
 if __name__ == "__main__":
 	import argparse
@@ -53,20 +108,24 @@ if __name__ == "__main__":
 	# Baseline configuration
 	det_pos = [-0.3, -0.1]
 	baseline_config = [10, 0.5, 4, det_pos, 0.0005] # VB_pos, VB_length, VB_m, Det_pos, VB_thickness, VB_filenames
-	print(baseline_config)
+	print('Baseline configuration:' + colors.BLUE + f'\n{baseline_config}' + colors.ENDC)
 
 	# Parameter options
-	VB_pos_vals = [8, 10, 15]		# VB pos is tied to geometry file though focusing
-	VB_length_vals = [0.3, 0.5]		# VB length is tied to geometry file 
+	#VB_pos_vals = [8, 9, 10, 11, 12, 13, 14, 15, 16]				# VB pos is tied to geometry file though focusing
+	#VB_length_vals = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1]		# VB length is tied to geometry file 
+	#VB_m_vals = [1, 1.25, 1.50, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5]
+	#VB_thickness_vals = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.0010]	# VB thickness is tied to geometry file
+	VB_pos_vals = [10, 15]
+	VB_length_vals = [0.3, 0.5, 0.8, 1.0]
 	VB_m_vals = [3, 4]
-	VB_thickness_vals = [0.0005]	# VB thickness is tied to geometry file
-	Det_pos_x_vals = [det_pos[0]]			# Det pos value is tied to geometry file through focusing
+	VB_thickness_vals = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.001]
+	Det_pos_x_vals = [det_pos[0]]	# Det pos value is tied to geometry file through focusing
 	Det_pos_y_vals = [det_pos[1]]
 
-	# all combinations of configs above 
-	grid_array1, grid_array2, grid_array3, grid_array4, grid_array5, grid_array6 = np.meshgrid(VB_pos_vals, VB_length_vals, VB_m_vals, VB_thickness_vals, Det_pos_x_vals, Det_pos_y_vals)
-	config_list = np.vstack((grid_array1.ravel(), grid_array2.ravel(), grid_array3.ravel(), grid_array4.ravel(), grid_array5.ravel(), grid_array6.ravel())).T
-	print(config_list)
+	# Create config list
+	#config_list = baseline_with_swaps(baseline_config, VB_pos_vals, VB_length_vals, VB_m_vals, Det_pos_x_vals, Det_pos_y_vals, VB_thickness_vals)	# Baseline config with swapped one variable each
+	config_list = all_combinations(VB_pos_vals, VB_length_vals, VB_m_vals, Det_pos_x_vals, Det_pos_y_vals, VB_thickness_vals)						# All combinations of configs above 
+	print('Configuration list:' + colors.BLUE + f'\n{config_list}' + colors.ENDC)
 
 	# --------------------------------
 	# Step 2: Run configurations and save output 

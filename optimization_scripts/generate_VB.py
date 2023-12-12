@@ -369,6 +369,7 @@ def generate_VB_focused_blades(VB_pos, zdet, det_pos, VB_length, VB_thickness, v
 
 # VB focused to y=0
 # assumed ysrc = 0
+# zdet = distance from vb to detector, NOT distance from source to target
 def generate_VB_array_pointFocused(length, thickness, zvb, zdet, hvb, hdet, ydet):
 	y_vals = np.zeros(10000) 
 	angles = np.zeros(10000) 
